@@ -38,8 +38,12 @@ bundle: build
 	@# Binary
 	cp $(BUILD_DIR)/$(APP_NAME) $(MACOS_DIR)/$(APP_NAME)
 
-	@# Info.plist
-	cp Info.plist $(CONTENTS)/Info.plist
+	@# Info.plist — expand Xcode build variable references
+	sed -e 's/\$$(DEVELOPMENT_LANGUAGE)/en/g' \
+	    -e 's/\$$(EXECUTABLE_NAME)/$(APP_NAME)/g' \
+	    -e 's/\$$(PRODUCT_BUNDLE_IDENTIFIER)/$(BUNDLE_ID)/g' \
+	    -e 's/\$$(PRODUCT_NAME)/$(APP_NAME)/g' \
+	    Info.plist > $(CONTENTS)/Info.plist
 
 	@# SPM resource bundle (contains web/ assets and other resources)
 	@if [ -d "$(BUILD_DIR)/$(RESOURCE_BUNDLE)" ]; then \
