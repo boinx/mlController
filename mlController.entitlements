@@ -9,5 +9,10 @@
     <!-- Incoming network connections: embedded HTTP server on port 8990 -->
     <key>com.apple.security.network.server</key>
     <true/>
+
+    <!-- Apple Events automation: NSRunningApplication.terminate() sends kAEQuitApplication
+         to mimoLive; required for Hardened Runtime apps that send Apple Events to other apps -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
 </dict>
 </plist>
