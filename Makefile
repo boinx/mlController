@@ -1,5 +1,5 @@
 APP_NAME      = mlController
-BUNDLE_ID     = com.oliver.mlcontroller
+BUNDLE_ID     = com.boinx.mlcontroller
 # Xcode-integrated SPM builds to .build/apple/Products/Release/
 BUILD_DIR     = .build/apple/Products/Release
 APP_BUNDLE    = $(APP_NAME).app
