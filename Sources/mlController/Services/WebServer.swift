@@ -105,7 +105,7 @@ final class WebServer: @unchecked Sendable {
     private func serveFile(_ name: String, ext: String, mimeType: String) -> ((HttpRequest) -> HttpResponse) {
         return { [weak self] _ in
             guard self != nil else { return .internalServerError }
-            guard let path = Bundle.module.path(forResource: name, ofType: ext, inDirectory: "web"),
+            guard let path = Bundle.main.path(forResource: name, ofType: ext, inDirectory: "web"),
                   let data = FileManager.default.contents(atPath: path),
                   let content = String(data: data, encoding: .utf8) else {
                 return .notFound

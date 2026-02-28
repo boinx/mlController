@@ -1,0 +1,56 @@
+name: mlController
+
+options:
+  bundleIdPrefix: com.oliver
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+  xcodeVersion: "16.0"
+
+packages:
+  Swifter:
+    url: https://github.com/httpswift/swifter.git
+    minorVersion: "1.5.0"
+
+targets:
+  mlController:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+
+    sources:
+      - path: Sources/mlController
+        excludes:
+          - "Resources/web/**"
+
+    resources:
+      - Sources/mlController/Resources/web
+
+    info:
+      path: Info.plist
+      properties:
+        LSUIElement: true
+        NSPrincipalClass: NSApplication
+        CFBundleDisplayName: "$(PRODUCT_NAME)"
+        NSHumanReadableCopyright: "Copyright © 2024 Oliver. All rights reserved."
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.oliver.mlcontroller
+        PRODUCT_NAME: mlController
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGNING_REQUIRED: YES
+        CODE_SIGNING_ALLOWED: YES
+        ENABLE_HARDENED_RUNTIME: NO
+
+    dependencies:
+      - package: Swifter
+        product: Swifter

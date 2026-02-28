@@ -6,8 +6,10 @@
 # Xcode
 *.xcuserstate
 *.xcuserdata/
-DerivedData/
 xcuserdata/
+DerivedData/
+*.xcworkspace/xcuserdata/
+# (mlController.xcodeproj and xcshareddata/xcschemes are committed)
 
 # macOS
 .DS_Store
