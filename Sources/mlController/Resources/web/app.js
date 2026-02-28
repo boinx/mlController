@@ -263,4 +263,4 @@ zoomFields.forEach(({ el, key }) => {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 refresh();
-setInterval(refresh, 5000);
+setInterval(refresh, 1000);

@@ -50,6 +50,7 @@ final class AppState: ObservableObject {
     private let monitor = MimoLiveMonitor()
     private let controller = MimoLiveController()
     private let scanner = LocalDocumentScanner()
+    private let mimoWebSocket = MimoLiveWebSocket()
     private(set) var webServer: WebServer?
     private var settingsWindowController: NSWindowController?
 
@@ -73,6 +74,16 @@ final class AppState: ObservableObject {
             let savedURL = URL(fileURLWithPath: savedPath)
             if availableMimoLiveApps.contains(where: { $0.url.standardizedFileURL == savedURL.standardizedFileURL }) {
                 selectedMimoLiveURL = savedURL
+            }
+        }
+
+        // WebSocket triggers instant refresh on document open/close.
+        // Short delay lets mimoLive's REST API catch up to its WebSocket events.
+        mimoWebSocket.onChange = { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                Task { @MainActor in
+                    await self?.refresh()
+                }
             }
         }
 
@@ -148,7 +159,7 @@ final class AppState: ObservableObject {
         pollingTask?.cancel()
         pollingTask = Task {
             while !Task.isCancelled {
-                do { try await Task.sleep(nanoseconds: 5_000_000_000) } catch { break }
+                do { try await Task.sleep(nanoseconds: 30_000_000_000) } catch { break }
                 await refresh()
             }
         }
@@ -158,6 +169,13 @@ final class AppState: ObservableObject {
         let running = monitor.isMimoLiveRunning()
         let docs: [MimoDocument] = running ? ((try? await monitor.fetchOpenDocuments()) ?? []) : []
         let local = scanner.scanLocalDocuments()
+
+        // Manage WebSocket lifecycle based on mimoLive running state
+        if running && !mimoWebSocket.isConnected {
+            mimoWebSocket.connect()
+        } else if !running && mimoWebSocket.isConnected {
+            mimoWebSocket.disconnect()
+        }
 
         isMimoLiveRunning = running
         openDocuments = docs
