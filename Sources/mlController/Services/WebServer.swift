@@ -223,6 +223,7 @@ final class WebServer: @unchecked Sendable {
 
             let displayName = (json["displayName"] as? String) ?? "mimoLive"
             let passcode = json["passcode"] as? String
+            let zoomAccountName = json["zoomAccountName"] as? String
             let virtualCamera = (json["virtualCamera"] as? Bool) ?? true
 
             // Build query for mimoLive Zoom join endpoint
@@ -234,6 +235,9 @@ final class WebServer: @unchecked Sendable {
             ]
             if let pc = passcode, !pc.isEmpty {
                 queryItems.append(URLQueryItem(name: "passcode", value: pc))
+            }
+            if let acct = zoomAccountName, !acct.isEmpty {
+                queryItems.append(URLQueryItem(name: "zoomaccountname", value: acct))
             }
             components.queryItems = queryItems
 

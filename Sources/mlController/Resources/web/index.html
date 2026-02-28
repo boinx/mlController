@@ -171,6 +171,61 @@
   .btn-restart{ background: var(--orange);color: #000; }
   .btn-zoom   { background: var(--blue);  color: #fff; }
 
+  /* ── Zoom Form ─────────────────────────── */
+  .zoom-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .zoom-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .zoom-field label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .zoom-field input {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-family: var(--font);
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .zoom-field input:focus { border-color: var(--accent); }
+  .zoom-field input::placeholder { color: var(--text-muted); opacity: 0.5; }
+
+  .zoom-form-footer {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .zoom-form-footer .sublabel {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    flex: 1;
+  }
+
+  @media (max-width: 640px) {
+    .zoom-form { grid-template-columns: 1fr; }
+  }
+
   /* ── Version Picker ──────────────────────── */
   .version-row {
     display: flex;
@@ -396,6 +451,39 @@
     </div>
     <div class="controls">
       <button class="btn-zoom" id="btn-zoom" onclick="joinZoomDemo()" disabled>Join Demo</button>
+    </div>
+  </div>
+
+  <!-- Custom Zoom Join -->
+  <div class="status-card" id="zoom-custom-row" style="display:none; flex-direction:column; align-items:stretch; gap:14px;">
+    <div style="display:flex; align-items:center; gap:18px;">
+      <div class="zoom-icon">📹</div>
+      <div class="status-text">
+        <div class="label">Join Zoom Meeting</div>
+        <div class="sublabel">Enter meeting details to join via mimoLive</div>
+      </div>
+    </div>
+    <div class="zoom-form">
+      <div class="zoom-field">
+        <label for="zoom-meeting-id">Meeting ID *</label>
+        <input type="text" id="zoom-meeting-id" placeholder="e.g. 123 456 7890">
+      </div>
+      <div class="zoom-field">
+        <label for="zoom-passcode">Passcode</label>
+        <input type="text" id="zoom-passcode" placeholder="Meeting passcode">
+      </div>
+      <div class="zoom-field">
+        <label for="zoom-display-name">Display Name</label>
+        <input type="text" id="zoom-display-name" placeholder="mimoLive">
+      </div>
+      <div class="zoom-field">
+        <label for="zoom-account-name">Zoom Account</label>
+        <input type="text" id="zoom-account-name" placeholder="Zoom account name">
+      </div>
+      <div class="zoom-form-footer">
+        <span class="sublabel" id="zoom-custom-sub"></span>
+        <button class="btn-zoom" id="btn-zoom-custom" onclick="joinZoomCustom()" disabled>Join Meeting</button>
+      </div>
     </div>
   </div>
 
