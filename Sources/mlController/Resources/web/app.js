@@ -3,6 +3,8 @@
 // ── State ────────────────────────────────────────────────────────────────────
 
 let lastStatus = null;
+let ws = null;
+let pollTimer = null;
 
 // ── DOM Refs ─────────────────────────────────────────────────────────────────
 
@@ -260,7 +262,58 @@ zoomFields.forEach(({ el, key }) => {
   el.addEventListener('input', () => localStorage.setItem(key, el.value));
 });
 
+// ── WebSocket (live push) ─────────────────────────────────────────────────────
+
+function connectWebSocket() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/ws`);
+
+  ws.onopen = () => {
+    // Server pushes state — stop polling
+    stopPolling();
+    errorBanner.classList.remove('visible');
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      errorBanner.classList.remove('visible');
+      render(data);
+      lastUpdated.textContent = 'Updated ' + new Date().toLocaleTimeString();
+    } catch (e) {
+      console.error('WebSocket parse error:', e);
+    }
+  };
+
+  ws.onclose = () => {
+    ws = null;
+    startPolling();
+    // Reconnect after 2 seconds
+    setTimeout(connectWebSocket, 2000);
+  };
+
+  ws.onerror = () => {
+    // onclose will fire after onerror, handling reconnect
+  };
+}
+
+// ── Polling Fallback ──────────────────────────────────────────────────────────
+
+function startPolling() {
+  if (!pollTimer) {
+    pollTimer = setInterval(refresh, 2000);
+  }
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-refresh();
-setInterval(refresh, 1000);
+refresh();           // Immediate first fetch
+startPolling();      // Poll until WebSocket connects
+connectWebSocket();  // Try WebSocket

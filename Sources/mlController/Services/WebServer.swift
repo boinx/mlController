@@ -32,6 +32,10 @@ final class WebServer: @unchecked Sendable {
     private let iconLock = NSLock()
     private var _docIconData: [UInt8]? = nil
 
+    // Connected WebSocket clients for live status push
+    private let sessionsLock = NSLock()
+    private var _sessions = Set<WebSocketSession>()
+
     // Callbacks invoked on the main queue for control commands
     var onStart: (() -> Void)?
     var onStop: (() -> Void)?
@@ -49,6 +53,7 @@ final class WebServer: @unchecked Sendable {
 
     func updateSnapshot(_ snapshot: StatusSnapshot) {
         snapshotLock.withLock { _snapshot = snapshot }
+        broadcastSnapshot()
     }
 
     private var snapshot: StatusSnapshot {
@@ -89,6 +94,26 @@ final class WebServer: @unchecked Sendable {
         // Static assets
         server.GET["/"] = serveFile("index", ext: "html", mimeType: "text/html; charset=utf-8")
         server.GET["/app.js"] = serveFile("app", ext: "js", mimeType: "application/javascript")
+
+        // WebSocket for live status push
+        server.GET["/ws"] = websocket(
+            connected: { [weak self] session in
+                guard let self = self else { return }
+                self.sessionsLock.lock()
+                self._sessions.insert(session)
+                self.sessionsLock.unlock()
+                // Send current state immediately on connect
+                if let json = self.snapshotJSON() {
+                    session.writeText(json)
+                }
+            },
+            disconnected: { [weak self] session in
+                guard let self = self else { return }
+                self.sessionsLock.lock()
+                self._sessions.remove(session)
+                self.sessionsLock.unlock()
+            }
+        )
 
         // API
         server.GET["/api/status"] = handleStatus
@@ -140,17 +165,39 @@ final class WebServer: @unchecked Sendable {
 
     private var handleStatus: ((HttpRequest) -> HttpResponse) {
         return { [weak self] _ in
-            guard let self = self else { return .internalServerError }
-            let snap = self.snapshot
-            let body: [String: Any] = [
-                "running": snap.running,
-                "openDocuments": snap.openDocuments,
-                "localDocuments": snap.localDocuments,
-                "selectedMimoLive": snap.selectedMimoLive,
-                "availableMimoLiveApps": snap.availableMimoLiveApps,
-                "selectedMimoLivePath": snap.selectedMimoLivePath
-            ]
-            return jsonResponse(body)
+            guard let self = self, let json = self.snapshotJSON() else {
+                return .internalServerError
+            }
+            return .raw(200, "OK", ["Content-Type": "application/json"]) { writer in
+                try writer.write([UInt8](json.utf8))
+            }
+        }
+    }
+
+    // MARK: - Snapshot JSON & WebSocket Broadcast
+
+    /// Serialize current snapshot to JSON string (reused by HTTP handler and WebSocket broadcast).
+    private func snapshotJSON() -> String? {
+        let snap = snapshot
+        let body: [String: Any] = [
+            "running": snap.running,
+            "openDocuments": snap.openDocuments,
+            "localDocuments": snap.localDocuments,
+            "selectedMimoLive": snap.selectedMimoLive,
+            "availableMimoLiveApps": snap.availableMimoLiveApps,
+            "selectedMimoLivePath": snap.selectedMimoLivePath
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]),
+              let str = String(data: data, encoding: .utf8) else { return nil }
+        return str
+    }
+
+    /// Push current snapshot to all connected WebSocket clients.
+    private func broadcastSnapshot() {
+        guard let json = snapshotJSON() else { return }
+        let sessions = sessionsLock.withLock { Array(_sessions) }
+        for session in sessions {
+            session.writeText(json)
         }
     }
 
