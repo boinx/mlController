@@ -1,0 +1,23 @@
+# Swift / SPM build artifacts
+.build/
+*.o
+*.d
+
+# Xcode
+*.xcuserstate
+*.xcuserdata/
+DerivedData/
+xcuserdata/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# App bundle (staging artifact, not source)
+mlController.app/
+
+# Claude Code local settings (launch.json is kept; settings are machine-specific)
+.claude/settings.local.json
+.claude/settings.json

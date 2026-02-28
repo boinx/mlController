@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mlController Dev (Mock)",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["dev-server.py"],
+      "port": 8990
+    },
+    {
+      "name": "mlController",
+      "runtimeExecutable": "/Applications/mlController.app/Contents/MacOS/mlController",
+      "runtimeArgs": [],
+      "port": 8990
+    }
+  ]
+}

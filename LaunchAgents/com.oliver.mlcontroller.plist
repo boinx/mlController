@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.oliver.mlcontroller</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Applications/mlController.app/Contents/MacOS/mlController</string>
+    </array>
+
+    <!-- Launch immediately when loaded, and at every login -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Restart if the app crashes (non-zero exit), but not if user quits -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/mlcontroller.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/mlcontroller.err</string>
+</dict>
+</plist>
