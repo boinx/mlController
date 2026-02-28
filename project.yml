@@ -44,12 +44,15 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.9"
         MACOSX_DEPLOYMENT_TARGET: "13.0"
+        # For local/ad-hoc builds use "-"; swap to "Developer ID Application: ..." for distribution
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
         DEVELOPMENT_TEAM: ""
         CODE_SIGNING_REQUIRED: YES
         CODE_SIGNING_ALLOWED: YES
-        ENABLE_HARDENED_RUNTIME: NO
+        # Enable Hardened Runtime (required for notarization)
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: mlController.entitlements
 
     dependencies:
       - package: Swifter

@@ -48,8 +48,8 @@ bundle: build
 		echo "Warning: Resource bundle not found at $(BUILD_DIR)/$(RESOURCE_BUNDLE)"; \
 	fi
 
-	@# Ad-hoc code sign (required to run on macOS 13+)
-	codesign --force --deep --sign - $(APP_BUNDLE)
+	@# Ad-hoc code sign with Hardened Runtime (--options runtime required for notarization)
+	codesign --force --deep --sign - --options runtime --entitlements mlController.entitlements $(APP_BUNDLE)
 	@echo "==> Bundle created: $(APP_BUNDLE)"
 
 # ── Step 3: Install to /Applications ─────────────────────────────────────────
