@@ -31,8 +31,8 @@ targets:
       properties:
         LSUIElement: true
         NSPrincipalClass: NSApplication
-        CFBundleDisplayName: "$(PRODUCT_NAME)"
-        NSHumanReadableCopyright: "Copyright © 2024 Oliver. All rights reserved."
+        CFBundleDisplayName: mimoLive Controller
+        NSHumanReadableCopyright: "Copyright © 2024 Boinx Software Ltd. All rights reserved."
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
 
@@ -45,10 +45,12 @@ targets:
         SWIFT_VERSION: "5.9"
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: 6372P8EH2J
         # Enable Hardened Runtime (required for notarization)
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_ENTITLEMENTS: mlController.entitlements
+        INFOPLIST_KEY_CFBundleDisplayName: mimoLive Controller
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
 
     dependencies:
       - package: Swifter
