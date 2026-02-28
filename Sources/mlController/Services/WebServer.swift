@@ -98,6 +98,7 @@ final class WebServer: @unchecked Sendable {
         server.POST["/api/restart"] = handleRestart
         server.POST["/api/open"] = handleOpen
         server.POST["/api/select"] = handleSelect
+        server.POST["/api/zoom/join"] = handleZoomJoin
     }
 
     // MARK: - Static File Serving (reads from Bundle.module)
@@ -207,6 +208,62 @@ final class WebServer: @unchecked Sendable {
             }
             DispatchQueue.main.async { self?.onOpenDocument?(path) }
             return jsonResponse(["status": "opening"])
+        }
+    }
+
+    // MARK: - Zoom Join (proxy to mimoLive API)
+
+    private var handleZoomJoin: ((HttpRequest) -> HttpResponse) {
+        return { request in
+            let bodyData = Data(request.body)
+            guard let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
+                  let meetingId = json["meetingId"] as? String, !meetingId.isEmpty else {
+                return .badRequest(.text("Missing or empty 'meetingId' field"))
+            }
+
+            let displayName = (json["displayName"] as? String) ?? "mimoLive"
+            let passcode = json["passcode"] as? String
+            let virtualCamera = (json["virtualCamera"] as? Bool) ?? true
+
+            // Build query for mimoLive Zoom join endpoint
+            var components = URLComponents(string: "http://localhost:8989/api/v1/zoom/join")!
+            var queryItems = [
+                URLQueryItem(name: "meetingid", value: meetingId),
+                URLQueryItem(name: "displayname", value: displayName),
+                URLQueryItem(name: "virtualcamera", value: virtualCamera ? "true" : "false"),
+            ]
+            if let pc = passcode, !pc.isEmpty {
+                queryItems.append(URLQueryItem(name: "passcode", value: pc))
+            }
+            components.queryItems = queryItems
+
+            guard let url = components.url else {
+                return jsonResponse(["error": "Failed to build mimoLive URL"])
+            }
+
+            // Synchronous request to mimoLive (Swifter handlers run on background threads)
+            let sem = DispatchSemaphore(value: 0)
+            var result: [String: Any] = ["status": "sent"]
+            var httpError: String?
+
+            let task = URLSession.shared.dataTask(with: url) { data, response, error in
+                if let error = error {
+                    httpError = error.localizedDescription
+                } else if let httpResp = response as? HTTPURLResponse, httpResp.statusCode >= 400 {
+                    httpError = "mimoLive returned HTTP \(httpResp.statusCode)"
+                } else if let data = data,
+                          let respJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    result = respJson
+                }
+                sem.signal()
+            }
+            task.resume()
+            _ = sem.wait(timeout: .now() + 10)
+
+            if let err = httpError {
+                return jsonResponse(["error": err])
+            }
+            return jsonResponse(result)
         }
     }
 

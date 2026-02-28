@@ -45,12 +45,8 @@ bundle: build
 	    -e 's/\$$(PRODUCT_NAME)/$(APP_NAME)/g' \
 	    Info.plist > $(CONTENTS)/Info.plist
 
-	@# SPM resource bundle (contains web/ assets and other resources)
-	@if [ -d "$(BUILD_DIR)/$(RESOURCE_BUNDLE)" ]; then \
-		cp -r $(BUILD_DIR)/$(RESOURCE_BUNDLE) $(RESOURCES_DIR)/$(RESOURCE_BUNDLE); \
-	else \
-		echo "Warning: Resource bundle not found at $(BUILD_DIR)/$(RESOURCE_BUNDLE)"; \
-	fi
+	@# Web assets — copy directly to main Resources so Bundle.main can find them
+	cp -r Sources/mlController/Resources/web $(RESOURCES_DIR)/web
 
 	@# Ad-hoc code sign with Hardened Runtime (--options runtime required for notarization)
 	codesign --force --deep --sign - --options runtime --entitlements mlController.entitlements $(APP_BUNDLE)

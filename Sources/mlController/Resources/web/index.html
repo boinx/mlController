@@ -169,6 +169,7 @@
   .btn-start  { background: var(--green); color: #000; }
   .btn-stop   { background: var(--red);   color: #fff; }
   .btn-restart{ background: var(--orange);color: #000; }
+  .btn-zoom   { background: var(--blue);  color: #fff; }
 
   /* ── Version Picker ──────────────────────── */
   .version-row {
@@ -384,6 +385,18 @@
   <div class="version-row" id="version-row" style="display:none">
     <label for="version-select">🎬 mimoLive Version</label>
     <select id="version-select" onchange="selectVersion(this.value)"></select>
+  </div>
+
+  <!-- Zoom Demo -->
+  <div class="status-card" id="zoom-row" style="display:none">
+    <div class="zoom-icon">📹</div>
+    <div class="status-text">
+      <div class="label">Zoom Demo Meeting</div>
+      <div class="sublabel" id="zoom-sub">Join the mimoLive Zoom demo meeting</div>
+    </div>
+    <div class="controls">
+      <button class="btn-zoom" id="btn-zoom" onclick="joinZoomDemo()" disabled>Join Demo</button>
+    </div>
   </div>
 
   <!-- Document Cards -->

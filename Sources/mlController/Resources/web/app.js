@@ -18,6 +18,9 @@ const errorBanner  = document.getElementById('error-banner');
 const btnStart     = document.getElementById('btn-start');
 const btnStop      = document.getElementById('btn-stop');
 const btnRestart   = document.getElementById('btn-restart');
+const btnZoom      = document.getElementById('btn-zoom');
+const zoomRow      = document.getElementById('zoom-row');
+const zoomSub      = document.getElementById('zoom-sub');
 
 // ── Fetch & Render ────────────────────────────────────────────────────────────
 
@@ -112,6 +115,8 @@ function setButtonState(running) {
   btnStart.disabled   = running;
   btnStop.disabled    = !running;
   btnRestart.disabled = !running;
+  btnZoom.disabled    = !running;
+  zoomRow.style.display = running ? '' : 'none';
 }
 
 // ── Commands ──────────────────────────────────────────────────────────────────
@@ -138,6 +143,30 @@ async function selectVersion(path) {
     setTimeout(refresh, 300);
   } catch (e) {
     console.error('Select version failed:', e);
+  }
+}
+
+async function joinZoomDemo() {
+  btnZoom.disabled = true;
+  zoomSub.textContent = 'Joining Zoom demo meeting…';
+  try {
+    const res = await fetch('/api/zoom/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        meetingId: 'Demo-Meeting-ID',
+        passcode: 'Demo-Meeting-Passcode'
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    zoomSub.textContent = 'Zoom demo meeting joined';
+  } catch (e) {
+    zoomSub.textContent = 'Failed to join: ' + e.message;
+    console.error('Zoom join failed:', e);
+  } finally {
+    btnZoom.disabled = false;
   }
 }
 
