@@ -220,6 +220,7 @@
   button:active { transform: scale(0.97); }
   button:disabled { opacity: 0.38; cursor: not-allowed; }
   .btn-zoom { background: var(--blue); color: #fff; }
+  .btn-leave { background: var(--red); color: #fff; }
 
   /* Zoom form */
   .zoom-form {
@@ -266,6 +267,63 @@
     flex: 1;
   }
 
+  /* Recording permission warning banner */
+  .recording-warning {
+    display: none;
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: rgba(245,166,35,0.12);
+    border: 1px solid rgba(245,166,35,0.3);
+    color: var(--orange);
+    line-height: 1.5;
+  }
+  .recording-warning.visible { display: block; }
+  .recording-warning .warning-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .recording-warning .warning-detail {
+    font-size: 0.78rem;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+  .recording-warning .warning-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .btn-warning {
+    background: var(--orange);
+    color: #000;
+    font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  .btn-warning:disabled { opacity: 0.5; cursor: not-allowed; }
+  .recording-warning .warning-status {
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+
+  /* Hidden utility */
+  .hidden { display: none !important; }
+
+  /* Meeting active indicator */
+  .meeting-active-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 10px var(--green);
+    flex-shrink: 0;
+  }
+
   /* Section divider */
   .section-label {
     font-size: 0.72rem;
@@ -310,48 +368,73 @@
 <main>
   <div class="alert" id="error-banner">Cannot connect to mlController</div>
 
-  <!-- Join Demo Meeting -->
-  <div class="status-card">
-    <div class="zoom-icon">📹</div>
+  <!-- In Meeting (shown when meeting is active) -->
+  <div class="status-card hidden" id="meeting-active-card">
+    <div class="meeting-active-dot"></div>
     <div class="status-text">
-      <div class="label">Demo Meeting</div>
-      <div class="sublabel" id="join-demo-sub">Join the mimoLive Zoom demo meeting</div>
+      <div class="label">In Zoom Meeting</div>
+      <div class="sublabel" id="meeting-active-sub"></div>
     </div>
     <div class="controls">
-      <button class="btn-zoom" id="btn-join-demo" onclick="joinZoomDemo()">Join Demo</button>
+      <button class="btn-leave" id="btn-leave" onclick="leaveZoomMeeting()">Leave Meeting</button>
     </div>
   </div>
 
-  <!-- Custom Zoom Join -->
-  <div class="status-card" style="flex-direction:column; align-items:stretch; gap:14px;">
-    <div style="display:flex; align-items:center; gap:18px;">
+  <!-- Join sections (hidden when meeting is active) -->
+  <div id="join-sections">
+    <!-- Join Demo Meeting -->
+    <div class="status-card" style="margin-bottom:14px;">
       <div class="zoom-icon">📹</div>
       <div class="status-text">
-        <div class="label">Join Zoom Meeting</div>
-        <div class="sublabel">Enter meeting details to join via mimoLive</div>
+        <div class="label">Demo Meeting</div>
+        <div class="sublabel" id="join-demo-sub">Join the mimoLive Zoom demo meeting</div>
+      </div>
+      <div class="controls">
+        <button class="btn-zoom" id="btn-join-demo" onclick="joinZoomDemo()">Join Demo</button>
       </div>
     </div>
-    <div class="zoom-form">
-      <div class="zoom-field">
-        <label for="zoom-meeting-id">Meeting ID *</label>
-        <input type="text" id="zoom-meeting-id" placeholder="e.g. 123 456 7890">
+
+    <!-- Custom Zoom Join -->
+    <div class="status-card" style="flex-direction:column; align-items:stretch; gap:14px;">
+      <div style="display:flex; align-items:center; gap:18px;">
+        <div class="zoom-icon">📹</div>
+        <div class="status-text">
+          <div class="label">Join Zoom Meeting</div>
+          <div class="sublabel">Enter meeting details to join via mimoLive</div>
+        </div>
       </div>
-      <div class="zoom-field">
-        <label for="zoom-passcode">Passcode</label>
-        <input type="text" id="zoom-passcode" placeholder="Meeting passcode">
+      <div class="zoom-form">
+        <div class="zoom-field">
+          <label for="zoom-meeting-id">Meeting ID *</label>
+          <input type="text" id="zoom-meeting-id" placeholder="e.g. 123 456 7890">
+        </div>
+        <div class="zoom-field">
+          <label for="zoom-passcode">Passcode</label>
+          <input type="text" id="zoom-passcode" placeholder="Meeting passcode">
+        </div>
+        <div class="zoom-field">
+          <label for="zoom-display-name">Display Name</label>
+          <input type="text" id="zoom-display-name" placeholder="mimoLive">
+        </div>
+        <div class="zoom-field">
+          <label for="zoom-account-name">Zoom Account</label>
+          <input type="text" id="zoom-account-name" placeholder="Zoom account name">
+        </div>
+        <div class="zoom-form-footer">
+          <span class="sublabel" id="join-custom-sub"></span>
+          <button class="btn-zoom" id="btn-join-custom" onclick="joinZoomCustom()">Join Meeting</button>
+        </div>
       </div>
-      <div class="zoom-field">
-        <label for="zoom-display-name">Display Name</label>
-        <input type="text" id="zoom-display-name" placeholder="mimoLive">
-      </div>
-      <div class="zoom-field">
-        <label for="zoom-account-name">Zoom Account</label>
-        <input type="text" id="zoom-account-name" placeholder="Zoom account name">
-      </div>
-      <div class="zoom-form-footer">
-        <span class="sublabel" id="join-custom-sub"></span>
-        <button class="btn-zoom" id="btn-join-custom" onclick="joinZoomCustom()">Join Meeting</button>
-      </div>
+    </div>
+  </div>
+
+  <!-- Recording Permission Warning -->
+  <div class="recording-warning" id="recording-warning">
+    <div class="warning-title">Awaiting Recording Permission</div>
+    <div class="warning-detail">The Zoom meeting host needs to grant recording permission to mimoLive before video feeds become available.</div>
+    <div class="warning-actions">
+      <button class="btn-warning" id="btn-request-recording" onclick="requestRecordingPermission()">Request Permission</button>
+      <span class="warning-status" id="recording-request-status"></span>
     </div>
   </div>
 

@@ -5,7 +5,7 @@
 set -euo pipefail
 
 APP_NAME="mlController"
-BUNDLE_ID="com.oliver.mlcontroller"
+BUNDLE_ID="com.boinx.mlcontroller"
 INSTALL_DIR="/Applications"
 LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
 PLIST_NAME="$BUNDLE_ID.plist"

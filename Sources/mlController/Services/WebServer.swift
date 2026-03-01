@@ -129,6 +129,8 @@ final class WebServer: @unchecked Sendable {
         server.GET["/api/zoom/sources"] = handleZoomSources
         server.GET["/api/zoom/participants"] = handleZoomParticipants
         server.POST["/api/zoom/assign"] = handleZoomAssign
+        server.POST["/api/zoom/request-recording"] = handleZoomRequestRecording
+        server.POST["/api/zoom/leave"] = handleZoomLeave
     }
 
     // MARK: - Static File Serving (reads from Bundle.module)
@@ -433,6 +435,40 @@ final class WebServer: @unchecked Sendable {
 
             if let err = httpError { return jsonResponse(["error": err]) }
             return jsonResponse(result)
+        }
+    }
+
+    /// Leave the current Zoom meeting.
+    private var handleZoomLeave: ((HttpRequest) -> HttpResponse) {
+        return { [weak self] _ in
+            guard let self = self else { return .internalServerError }
+            guard let url = URL(string: "http://localhost:8989/api/v1/zoom/leave") else {
+                return jsonResponse(["error": "Bad URL"])
+            }
+            let (data, error) = self.syncGET(url)
+            if let error = error { return jsonResponse(["error": error]) }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                return jsonResponse(["error": "Failed to parse response"])
+            }
+            return jsonResponse(json)
+        }
+    }
+
+    /// Request recording permission from the Zoom meeting host.
+    private var handleZoomRequestRecording: ((HttpRequest) -> HttpResponse) {
+        return { [weak self] _ in
+            guard let self = self else { return .internalServerError }
+            guard let url = URL(string: "http://localhost:8989/api/v1/zoom/meetingaction?command=requestRecordingPermission") else {
+                return jsonResponse(["error": "Bad URL"])
+            }
+            let (data, error) = self.syncGET(url)
+            if let error = error { return jsonResponse(["error": error]) }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                return jsonResponse(["error": "Failed to parse response"])
+            }
+            return jsonResponse(json)
         }
     }
 

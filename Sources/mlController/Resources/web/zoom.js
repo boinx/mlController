@@ -11,18 +11,23 @@ let assignInFlight = false;   // true while an assignment API call is in progres
 
 // ── DOM Refs ─────────────────────────────────────────────────────────────────
 
-const container       = document.getElementById('sources-container');
-const meetingInfo     = document.getElementById('meeting-info');
-const lastUpdated     = document.getElementById('last-updated');
-const errorBanner     = document.getElementById('error-banner');
-const btnJoinDemo     = document.getElementById('btn-join-demo');
-const joinDemoSub     = document.getElementById('join-demo-sub');
-const btnJoinCustom   = document.getElementById('btn-join-custom');
-const joinCustomSub   = document.getElementById('join-custom-sub');
-const zoomMeetingId   = document.getElementById('zoom-meeting-id');
-const zoomPasscode    = document.getElementById('zoom-passcode');
-const zoomDisplayName = document.getElementById('zoom-display-name');
-const zoomAccountName = document.getElementById('zoom-account-name');
+const container          = document.getElementById('sources-container');
+const meetingInfo        = document.getElementById('meeting-info');
+const lastUpdated        = document.getElementById('last-updated');
+const errorBanner        = document.getElementById('error-banner');
+const recordingWarning   = document.getElementById('recording-warning');
+const joinSections       = document.getElementById('join-sections');
+const meetingActiveCard  = document.getElementById('meeting-active-card');
+const meetingActiveSub   = document.getElementById('meeting-active-sub');
+const btnLeave           = document.getElementById('btn-leave');
+const btnJoinDemo        = document.getElementById('btn-join-demo');
+const joinDemoSub        = document.getElementById('join-demo-sub');
+const btnJoinCustom      = document.getElementById('btn-join-custom');
+const joinCustomSub      = document.getElementById('join-custom-sub');
+const zoomMeetingId      = document.getElementById('zoom-meeting-id');
+const zoomPasscode       = document.getElementById('zoom-passcode');
+const zoomDisplayName    = document.getElementById('zoom-display-name');
+const zoomAccountName    = document.getElementById('zoom-account-name');
 
 // ── Fetch Zoom Data ──────────────────────────────────────────────────────────
 
@@ -72,17 +77,36 @@ function render() {
   }
   renderPending = false;
 
+  // Toggle join / in-meeting sections based on participant count
+  const inMeeting = currentParticipants.length > 0;
+  joinSections.classList.toggle('hidden', inMeeting);
+  meetingActiveCard.classList.toggle('hidden', !inMeeting);
+  if (inMeeting) {
+    const host = currentParticipants.find(p => p.userRole === 'Host');
+    const count = currentParticipants.length;
+    const parts = [];
+    parts.push(`${count} participant${count !== 1 ? 's' : ''}`);
+    if (host) parts.push(`Host: ${host.name}`);
+    meetingActiveSub.textContent = parts.join(' · ');
+  }
+
   if (currentSources.length === 0) {
     renderEmpty('No Zoom sources in the current document');
+    recordingWarning.classList.remove('visible');
     return;
   }
+
+  // Detect recording permission warning
+  const awaitingPermission = currentSources.some(src =>
+    (src['summary'] || '').includes('Awaiting Recording Permission')
+  );
+  recordingWarning.classList.toggle('visible', awaitingPermission);
 
   container.innerHTML = currentSources.map(src => {
     const selType  = src['zoom-userselectiontype'] || 0;
     const userId   = src['zoom-userid'];
     const username = src['zoom-username'] || '';
     const summary  = src['summary'] || '';
-
     // Assignment display
     let assignIcon = '';
     let assignText = '';
@@ -139,6 +163,9 @@ function render() {
 function renderEmpty(msg) {
   container.innerHTML = `<div class="empty-state">${esc(msg)}</div>`;
   meetingInfo.textContent = '';
+  recordingWarning.classList.remove('visible');
+  joinSections.classList.remove('hidden');
+  meetingActiveCard.classList.add('hidden');
 }
 
 function participantFlags(p) {
@@ -260,6 +287,48 @@ async function joinZoomCustom() {
     console.error('Zoom custom join failed:', e);
   } finally {
     btnJoinCustom.disabled = false;
+  }
+}
+
+// ── Leave Meeting ────────────────────────────────────────────────────────────
+
+async function leaveZoomMeeting() {
+  btnLeave.disabled = true;
+  meetingActiveSub.textContent = 'Leaving meeting…';
+  try {
+    const res = await fetch('/api/zoom/leave', { method: 'POST' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    meetingActiveSub.textContent = 'Left meeting';
+    setTimeout(fetchZoomData, 2000);
+  } catch (e) {
+    meetingActiveSub.textContent = 'Failed to leave: ' + e.message;
+    console.error('Leave meeting failed:', e);
+  } finally {
+    btnLeave.disabled = false;
+  }
+}
+
+// ── Request Recording Permission ─────────────────────────────────────────────
+
+async function requestRecordingPermission() {
+  const btn = document.getElementById('btn-request-recording');
+  const status = document.getElementById('recording-request-status');
+  btn.disabled = true;
+  status.textContent = 'Requesting…';
+  try {
+    const res = await fetch('/api/zoom/request-recording', { method: 'POST' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    status.textContent = 'Permission requested — waiting for host to approve';
+    setTimeout(fetchZoomData, 2000);
+  } catch (e) {
+    status.textContent = 'Failed: ' + e.message;
+    console.error('Request recording permission failed:', e);
+  } finally {
+    btn.disabled = false;
   }
 }
 

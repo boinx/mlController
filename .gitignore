@@ -20,6 +20,11 @@ DerivedData/
 # App bundle (staging artifact, not source)
 mlController.app/
 
+# Release artifacts
+*.dmg
+*.zip
+dmg_staging/
+
 # Claude Code local settings (launch.json is kept; settings are machine-specific)
 .claude/settings.local.json
 .claude/settings.json
