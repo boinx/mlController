@@ -26,6 +26,7 @@ const zoomSub      = document.getElementById('zoom-sub');
 const zoomCustomRow  = document.getElementById('zoom-custom-row');
 const btnZoomCustom  = document.getElementById('btn-zoom-custom');
 const zoomCustomSub  = document.getElementById('zoom-custom-sub');
+const btnZoomSources = document.getElementById('btn-zoom-sources');
 const zoomMeetingId  = document.getElementById('zoom-meeting-id');
 const zoomPasscode   = document.getElementById('zoom-passcode');
 const zoomDisplayName = document.getElementById('zoom-display-name');
@@ -126,6 +127,7 @@ function setButtonState(running) {
   btnRestart.disabled = !running;
   btnZoom.disabled    = !running;
   btnZoomCustom.disabled = !running;
+  btnZoomSources.disabled = !running;
   zoomRow.style.display = running ? '' : 'none';
   zoomCustomRow.style.display = running ? '' : 'none';
 }
@@ -209,6 +211,10 @@ async function joinZoomCustom() {
   } finally {
     btnZoomCustom.disabled = false;
   }
+}
+
+function openZoomSources() {
+  window.open('/zoom.html', 'zoom-sources', 'width=760,height=700');
 }
 
 async function openDoc(path) {

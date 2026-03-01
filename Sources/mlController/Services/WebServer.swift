@@ -94,6 +94,8 @@ final class WebServer: @unchecked Sendable {
         // Static assets
         server.GET["/"] = serveFile("index", ext: "html", mimeType: "text/html; charset=utf-8")
         server.GET["/app.js"] = serveFile("app", ext: "js", mimeType: "application/javascript")
+        server.GET["/zoom.html"] = serveFile("zoom", ext: "html", mimeType: "text/html; charset=utf-8")
+        server.GET["/zoom.js"] = serveFile("zoom", ext: "js", mimeType: "application/javascript")
 
         // WebSocket for live status push
         server.GET["/ws"] = websocket(
@@ -124,6 +126,9 @@ final class WebServer: @unchecked Sendable {
         server.POST["/api/open"] = handleOpen
         server.POST["/api/select"] = handleSelect
         server.POST["/api/zoom/join"] = handleZoomJoin
+        server.GET["/api/zoom/sources"] = handleZoomSources
+        server.GET["/api/zoom/participants"] = handleZoomParticipants
+        server.POST["/api/zoom/assign"] = handleZoomAssign
     }
 
     // MARK: - Static File Serving (reads from Bundle.module)
@@ -316,6 +321,141 @@ final class WebServer: @unchecked Sendable {
             }
             return jsonResponse(result)
         }
+    }
+
+    // MARK: - Zoom Source Management (proxy to mimoLive API)
+
+    /// Fetch Zoom participant sources for the first open document.
+    private var handleZoomSources: ((HttpRequest) -> HttpResponse) {
+        return { [weak self] _ in
+            guard let self = self else { return .internalServerError }
+            let snap = self.snapshot
+            guard snap.running, let firstDoc = snap.openDocuments.first,
+                  let docId = firstDoc["id"] else {
+                return jsonResponse(["error": "No document open", "sources": [] as [Any]])
+            }
+            guard let url = URL(string: "http://localhost:8989/api/v1/documents/\(docId)/sources") else {
+                return jsonResponse(["error": "Bad URL"])
+            }
+            let (data, error) = syncGET(url)
+            if let error = error { return jsonResponse(["error": error]) }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let items = json["data"] as? [[String: Any]] else {
+                return jsonResponse(["error": "Failed to parse sources", "sources": [] as [Any]])
+            }
+            // Filter to Zoom participant sources only
+            let zoomSources: [[String: Any]] = items.compactMap { item in
+                guard let attrs = item["attributes"] as? [String: Any],
+                      let sourceType = attrs["source-type"] as? String,
+                      sourceType == "com.boinx.mimoLive.sources.zoomparticipant",
+                      let id = item["id"] as? String else { return nil }
+                var source: [String: Any] = ["id": id]
+                source["name"] = attrs["name"] ?? ""
+                source["summary"] = attrs["summary"] ?? ""
+                source["zoom-username"] = attrs["zoom-username"] ?? ""
+                source["zoom-userselectiontype"] = attrs["zoom-userselectiontype"] ?? 0
+                if let uid = attrs["zoom-userid"] { source["zoom-userid"] = uid }
+                return source
+            }
+            return jsonResponse(["sources": zoomSources])
+        }
+    }
+
+    /// Fetch all Zoom meeting participants.
+    private var handleZoomParticipants: ((HttpRequest) -> HttpResponse) {
+        return { [weak self] _ in
+            guard let self = self else { return .internalServerError }
+            guard let url = URL(string: "http://localhost:8989/api/v1/zoom/participants") else {
+                return jsonResponse(["error": "Bad URL"])
+            }
+            let (data, error) = self.syncGET(url)
+            if let error = error { return jsonResponse(["error": error, "participants": [] as [Any]]) }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let items = json["data"] as? [Any] else {
+                return jsonResponse(["error": "Failed to parse participants", "participants": [] as [Any]])
+            }
+            return jsonResponse(["participants": items])
+        }
+    }
+
+    /// Assign a Zoom attendee to a source via mimoLive PATCH.
+    private var handleZoomAssign: ((HttpRequest) -> HttpResponse) {
+        return { request in
+            let bodyData = Data(request.body)
+            guard let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
+                  let sourceId = json["sourceId"] as? String, !sourceId.isEmpty else {
+                return .badRequest(.text("Missing 'sourceId'"))
+            }
+            let selectionType = json["selectionType"] as? Int
+            let userId = json["userId"] as? Int
+
+            // Build the PATCH body for mimoLive
+            var patchBody: [String: Any] = [:]
+            if let selType = selectionType {
+                patchBody["zoom-userselectiontype"] = selType
+            }
+            if let uid = userId {
+                patchBody["zoom-userid"] = uid
+            }
+
+            // Extract docId from sourceId (format: "docId-UUID")
+            let parts = sourceId.split(separator: "-", maxSplits: 1)
+            guard parts.count == 2 else { return .badRequest(.text("Invalid sourceId format")) }
+            let docId = String(parts[0])
+
+            guard let url = URL(string: "http://localhost:8989/api/v1/documents/\(docId)/sources/\(sourceId)"),
+                  let patchData = try? JSONSerialization.data(withJSONObject: patchBody) else {
+                return jsonResponse(["error": "Failed to build request"])
+            }
+
+            var req = URLRequest(url: url)
+            req.httpMethod = "PATCH"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = patchData
+
+            let sem = DispatchSemaphore(value: 0)
+            let result: [String: Any] = ["status": "ok"]
+            var httpError: String?
+
+            let task = URLSession.shared.dataTask(with: req) { data, response, error in
+                if let error = error {
+                    httpError = error.localizedDescription
+                } else if let httpResp = response as? HTTPURLResponse, httpResp.statusCode >= 400 {
+                    httpError = "mimoLive returned HTTP \(httpResp.statusCode)"
+                }
+                sem.signal()
+            }
+            task.resume()
+            _ = sem.wait(timeout: .now() + 10)
+
+            if let err = httpError { return jsonResponse(["error": err]) }
+            return jsonResponse(result)
+        }
+    }
+
+    // MARK: - mimoLive Proxy Helper
+
+    /// Synchronous GET request to mimoLive (safe to call from Swifter handler threads).
+    private func syncGET(_ url: URL) -> (Data?, String?) {
+        let sem = DispatchSemaphore(value: 0)
+        var resultData: Data?
+        var resultError: String?
+
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                resultError = error.localizedDescription
+            } else if let httpResp = response as? HTTPURLResponse, httpResp.statusCode >= 400 {
+                resultError = "mimoLive returned HTTP \(httpResp.statusCode)"
+            } else {
+                resultData = data
+            }
+            sem.signal()
+        }
+        task.resume()
+        _ = sem.wait(timeout: .now() + 10)
+        return (resultData, resultError)
     }
 
     // MARK: - Helpers
