@@ -6,13 +6,23 @@ let ws = null;
 let pollTimer = null;
 let currentSources = [];
 let currentParticipants = [];
+let renderPending = false;    // true when a render was skipped due to open dropdown
+let assignInFlight = false;   // true while an assignment API call is in progress
 
 // ── DOM Refs ─────────────────────────────────────────────────────────────────
 
-const container   = document.getElementById('sources-container');
-const meetingInfo = document.getElementById('meeting-info');
-const lastUpdated = document.getElementById('last-updated');
-const errorBanner = document.getElementById('error-banner');
+const container       = document.getElementById('sources-container');
+const meetingInfo     = document.getElementById('meeting-info');
+const lastUpdated     = document.getElementById('last-updated');
+const errorBanner     = document.getElementById('error-banner');
+const btnJoinDemo     = document.getElementById('btn-join-demo');
+const joinDemoSub     = document.getElementById('join-demo-sub');
+const btnJoinCustom   = document.getElementById('btn-join-custom');
+const joinCustomSub   = document.getElementById('join-custom-sub');
+const zoomMeetingId   = document.getElementById('zoom-meeting-id');
+const zoomPasscode    = document.getElementById('zoom-passcode');
+const zoomDisplayName = document.getElementById('zoom-display-name');
+const zoomAccountName = document.getElementById('zoom-account-name');
 
 // ── Fetch Zoom Data ──────────────────────────────────────────────────────────
 
@@ -49,7 +59,19 @@ async function fetchZoomData() {
 
 // ── Render ────────────────────────────────────────────────────────────────────
 
+function isDropdownOpen() {
+  const focused = document.activeElement;
+  return focused && focused.classList.contains('source-select');
+}
+
 function render() {
+  // Defer render while user is interacting with a dropdown or assignment is in-flight
+  if (isDropdownOpen() || assignInFlight) {
+    renderPending = true;
+    return;
+  }
+  renderPending = false;
+
   if (currentSources.length === 0) {
     renderEmpty('No Zoom sources in the current document');
     return;
@@ -133,18 +155,36 @@ function participantFlags(p) {
 async function onAssign(selectEl) {
   const sourceId = selectEl.dataset.sourceId;
   const value = selectEl.value;
-  selectEl.disabled = true;
+  assignInFlight = true;
 
   let body = { sourceId };
+  let optimisticName = '';
 
   if (value === 'auto') {
     body.selectionType = 2;
+    optimisticName = 'Automatic';
   } else if (value === 'screenshare') {
     body.selectionType = 6;
+    optimisticName = 'Screen Share';
   } else if (value.startsWith('p:')) {
     const userId = parseInt(value.slice(2), 10);
     body.selectionType = 1;
     body.userId = userId;
+    // Find participant name for optimistic display
+    const p = currentParticipants.find(pp => pp.id === userId);
+    optimisticName = p ? p.name : '';
+  }
+
+  // Optimistic UI: immediately update the "Assigned:" label
+  const card = selectEl.closest('.source-card');
+  if (card && optimisticName) {
+    const assignEl = card.querySelector('.source-assignment');
+    if (assignEl) {
+      const icon = value === 'auto' ? '🔄' : value === 'screenshare' ? '📺' : '📹';
+      const label = value === 'auto' && optimisticName !== 'Automatic'
+        ? `${optimisticName} (Automatic)` : optimisticName;
+      assignEl.innerHTML = `${icon} Assigned: <strong>${esc(label)}</strong>`;
+    }
   }
 
   try {
@@ -156,14 +196,70 @@ async function onAssign(selectEl) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    // Refresh after a short delay to let mimoLive resolve the assignment
-    setTimeout(fetchZoomData, 1000);
+    // Fetch fresh data after mimoLive resolves the username (~500ms)
+    assignInFlight = false;
+    setTimeout(fetchZoomData, 500);
   } catch (e) {
     console.error('Assign failed:', e);
+    assignInFlight = false;
     // Refresh to revert select to actual state
     await fetchZoomData();
+  }
+}
+
+// ── Join Meeting ─────────────────────────────────────────────────────────────
+
+async function joinZoomDemo() {
+  btnJoinDemo.disabled = true;
+  joinDemoSub.textContent = 'Joining Zoom demo meeting…';
+  try {
+    const res = await fetch('/api/zoom/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        meetingId: 'Demo-Meeting-ID',
+        passcode: 'Demo-Meeting-Passcode'
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    joinDemoSub.textContent = 'Zoom demo meeting joined';
+  } catch (e) {
+    joinDemoSub.textContent = 'Failed to join: ' + e.message;
+    console.error('Zoom join failed:', e);
   } finally {
-    selectEl.disabled = false;
+    btnJoinDemo.disabled = false;
+  }
+}
+
+async function joinZoomCustom() {
+  const meetingId = zoomMeetingId.value.trim();
+  if (!meetingId) {
+    joinCustomSub.textContent = 'Meeting ID is required';
+    return;
+  }
+  btnJoinCustom.disabled = true;
+  joinCustomSub.textContent = 'Joining Zoom meeting…';
+  try {
+    const body = { meetingId, virtualCamera: true };
+    if (zoomPasscode.value.trim())    body.passcode = zoomPasscode.value.trim();
+    if (zoomDisplayName.value.trim()) body.displayName = zoomDisplayName.value.trim();
+    if (zoomAccountName.value.trim()) body.zoomAccountName = zoomAccountName.value.trim();
+    const res = await fetch('/api/zoom/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    joinCustomSub.textContent = 'Zoom meeting joined';
+  } catch (e) {
+    joinCustomSub.textContent = 'Failed to join: ' + e.message;
+    console.error('Zoom custom join failed:', e);
+  } finally {
+    btnJoinCustom.disabled = false;
   }
 }
 
@@ -207,6 +303,35 @@ function startPolling() {
     pollTimer = setInterval(fetchZoomData, 3000);
   }
 }
+
+// ── Deferred Render Flush ─────────────────────────────────────────────────────
+// When a dropdown closes without making a selection, flush any pending render.
+document.addEventListener('focusout', (e) => {
+  if (e.target && e.target.classList.contains('source-select') && renderPending) {
+    // Small delay to let change event fire first if user made a selection
+    setTimeout(() => { if (renderPending && !assignInFlight) render(); }, 100);
+  }
+});
+
+// ── Zoom Field Persistence ────────────────────────────────────────────────────
+
+const zoomFields = [
+  { el: zoomMeetingId,   key: 'zoom_meetingId' },
+  { el: zoomPasscode,    key: 'zoom_passcode' },
+  { el: zoomDisplayName, key: 'zoom_displayName' },
+  { el: zoomAccountName, key: 'zoom_accountName' },
+];
+
+// Restore saved values
+zoomFields.forEach(({ el, key }) => {
+  const saved = localStorage.getItem(key);
+  if (saved) el.value = saved;
+});
+
+// Persist on every keystroke
+zoomFields.forEach(({ el, key }) => {
+  el.addEventListener('input', () => localStorage.setItem(key, el.value));
+});
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 

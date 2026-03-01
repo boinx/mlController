@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>mlController — Zoom Source Assignment</title>
+<title>mlController — Zoom Panel</title>
 <style>
   :root {
     --bg: #0f1117;
@@ -178,6 +178,110 @@
     font-size: 0.88rem;
   }
 
+  /* Status card (join meeting) */
+  .status-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .status-text .label {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .status-text .sublabel {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 7px;
+    font-family: var(--font);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.38; cursor: not-allowed; }
+  .btn-zoom { background: var(--blue); color: #fff; }
+
+  /* Zoom form */
+  .zoom-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+  .zoom-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .zoom-field label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .zoom-field input {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-family: var(--font);
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .zoom-field input:focus { border-color: var(--accent); }
+  .zoom-field input::placeholder { color: var(--text-muted); opacity: 0.5; }
+  .zoom-form-footer {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .zoom-form-footer .sublabel {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    flex: 1;
+  }
+
+  /* Section divider */
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text-muted);
+    padding: 6px 0 0;
+  }
+
+  @media (max-width: 640px) {
+    .zoom-form { grid-template-columns: 1fr; }
+    .controls { justify-content: flex-start; margin-left: 0; margin-top: 12px; }
+    .status-card { flex-wrap: wrap; }
+  }
+
   /* Footer */
   footer {
     text-align: center;
@@ -194,8 +298,8 @@
 <header>
   <a href="/" class="back-link">&larr; Dashboard</a>
   <div>
-    <h1>Zoom Source Assignment</h1>
-    <div class="subtitle">Assign meeting participants to sources</div>
+    <h1>Zoom Panel</h1>
+    <div class="subtitle">Join meetings and assign sources</div>
   </div>
   <div class="refresh-info">
     <div class="dot-pulse"></div>
@@ -205,13 +309,61 @@
 
 <main>
   <div class="alert" id="error-banner">Cannot connect to mlController</div>
+
+  <!-- Join Demo Meeting -->
+  <div class="status-card">
+    <div class="zoom-icon">📹</div>
+    <div class="status-text">
+      <div class="label">Demo Meeting</div>
+      <div class="sublabel" id="join-demo-sub">Join the mimoLive Zoom demo meeting</div>
+    </div>
+    <div class="controls">
+      <button class="btn-zoom" id="btn-join-demo" onclick="joinZoomDemo()">Join Demo</button>
+    </div>
+  </div>
+
+  <!-- Custom Zoom Join -->
+  <div class="status-card" style="flex-direction:column; align-items:stretch; gap:14px;">
+    <div style="display:flex; align-items:center; gap:18px;">
+      <div class="zoom-icon">📹</div>
+      <div class="status-text">
+        <div class="label">Join Zoom Meeting</div>
+        <div class="sublabel">Enter meeting details to join via mimoLive</div>
+      </div>
+    </div>
+    <div class="zoom-form">
+      <div class="zoom-field">
+        <label for="zoom-meeting-id">Meeting ID *</label>
+        <input type="text" id="zoom-meeting-id" placeholder="e.g. 123 456 7890">
+      </div>
+      <div class="zoom-field">
+        <label for="zoom-passcode">Passcode</label>
+        <input type="text" id="zoom-passcode" placeholder="Meeting passcode">
+      </div>
+      <div class="zoom-field">
+        <label for="zoom-display-name">Display Name</label>
+        <input type="text" id="zoom-display-name" placeholder="mimoLive">
+      </div>
+      <div class="zoom-field">
+        <label for="zoom-account-name">Zoom Account</label>
+        <input type="text" id="zoom-account-name" placeholder="Zoom account name">
+      </div>
+      <div class="zoom-form-footer">
+        <span class="sublabel" id="join-custom-sub"></span>
+        <button class="btn-zoom" id="btn-join-custom" onclick="joinZoomCustom()">Join Meeting</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Source Assignment -->
+  <div class="section-label">Source Assignment</div>
   <div id="sources-container">
     <div class="empty-state">Loading Zoom sources...</div>
   </div>
   <div class="meeting-info" id="meeting-info"></div>
 </main>
 
-<footer>mlController &middot; Zoom Source Assignment &middot; Port 8990</footer>
+<footer>mlController &middot; Zoom Panel &middot; Port 8990</footer>
 
 <script src="/zoom.js"></script>
 </body>

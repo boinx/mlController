@@ -391,13 +391,14 @@ final class WebServer: @unchecked Sendable {
             let selectionType = json["selectionType"] as? Int
             let userId = json["userId"] as? Int
 
-            // Build the PATCH body for mimoLive
+            // Build the PATCH body for mimoLive.
+            // For specific participant (type 1): only send zoom-userid — mimoLive infers the type.
+            // For Automatic (type 2) or Screen Share (type 6): only send zoom-userselectiontype.
             var patchBody: [String: Any] = [:]
-            if let selType = selectionType {
-                patchBody["zoom-userselectiontype"] = selType
-            }
-            if let uid = userId {
+            if let uid = userId, selectionType == 1 {
                 patchBody["zoom-userid"] = uid
+            } else if let selType = selectionType {
+                patchBody["zoom-userselectiontype"] = selType
             }
 
             // Extract docId from sourceId (format: "docId-UUID")

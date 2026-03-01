@@ -20,17 +20,8 @@ const errorBanner  = document.getElementById('error-banner');
 const btnStart     = document.getElementById('btn-start');
 const btnStop      = document.getElementById('btn-stop');
 const btnRestart   = document.getElementById('btn-restart');
-const btnZoom      = document.getElementById('btn-zoom');
 const zoomRow      = document.getElementById('zoom-row');
-const zoomSub      = document.getElementById('zoom-sub');
-const zoomCustomRow  = document.getElementById('zoom-custom-row');
-const btnZoomCustom  = document.getElementById('btn-zoom-custom');
-const zoomCustomSub  = document.getElementById('zoom-custom-sub');
-const btnZoomSources = document.getElementById('btn-zoom-sources');
-const zoomMeetingId  = document.getElementById('zoom-meeting-id');
-const zoomPasscode   = document.getElementById('zoom-passcode');
-const zoomDisplayName = document.getElementById('zoom-display-name');
-const zoomAccountName = document.getElementById('zoom-account-name');
+const btnZoomOpen  = document.getElementById('btn-zoom-open');
 
 // ── Fetch & Render ────────────────────────────────────────────────────────────
 
@@ -125,11 +116,8 @@ function setButtonState(running) {
   btnStart.disabled   = running;
   btnStop.disabled    = !running;
   btnRestart.disabled = !running;
-  btnZoom.disabled    = !running;
-  btnZoomCustom.disabled = !running;
-  btnZoomSources.disabled = !running;
+  btnZoomOpen.disabled = !running;
   zoomRow.style.display = running ? '' : 'none';
-  zoomCustomRow.style.display = running ? '' : 'none';
 }
 
 // ── Commands ──────────────────────────────────────────────────────────────────
@@ -159,62 +147,8 @@ async function selectVersion(path) {
   }
 }
 
-async function joinZoomDemo() {
-  btnZoom.disabled = true;
-  zoomSub.textContent = 'Joining Zoom demo meeting…';
-  try {
-    const res = await fetch('/api/zoom/join', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        meetingId: 'Demo-Meeting-ID',
-        passcode: 'Demo-Meeting-Passcode'
-      })
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    zoomSub.textContent = 'Zoom demo meeting joined';
-  } catch (e) {
-    zoomSub.textContent = 'Failed to join: ' + e.message;
-    console.error('Zoom join failed:', e);
-  } finally {
-    btnZoom.disabled = false;
-  }
-}
-
-async function joinZoomCustom() {
-  const meetingId = zoomMeetingId.value.trim();
-  if (!meetingId) {
-    zoomCustomSub.textContent = 'Meeting ID is required';
-    return;
-  }
-  btnZoomCustom.disabled = true;
-  zoomCustomSub.textContent = 'Joining Zoom meeting…';
-  try {
-    const body = { meetingId, virtualCamera: true };
-    if (zoomPasscode.value.trim())    body.passcode = zoomPasscode.value.trim();
-    if (zoomDisplayName.value.trim()) body.displayName = zoomDisplayName.value.trim();
-    if (zoomAccountName.value.trim()) body.zoomAccountName = zoomAccountName.value.trim();
-    const res = await fetch('/api/zoom/join', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    zoomCustomSub.textContent = 'Zoom meeting joined';
-  } catch (e) {
-    zoomCustomSub.textContent = 'Failed to join: ' + e.message;
-    console.error('Zoom custom join failed:', e);
-  } finally {
-    btnZoomCustom.disabled = false;
-  }
-}
-
-function openZoomSources() {
-  window.open('/zoom.html', 'zoom-sources', 'width=760,height=700');
+function openZoomPage() {
+  window.open('/zoom.html', 'zoom', 'width=760,height=800');
 }
 
 async function openDoc(path) {
@@ -247,26 +181,6 @@ function baseName(path) {
   const dot = file.lastIndexOf('.');
   return dot > 0 ? file.slice(0, dot) : file;
 }
-
-// ── Zoom Field Persistence ────────────────────────────────────────────────────
-
-const zoomFields = [
-  { el: zoomMeetingId,   key: 'zoom_meetingId' },
-  { el: zoomPasscode,    key: 'zoom_passcode' },
-  { el: zoomDisplayName, key: 'zoom_displayName' },
-  { el: zoomAccountName, key: 'zoom_accountName' },
-];
-
-// Restore saved values
-zoomFields.forEach(({ el, key }) => {
-  const saved = localStorage.getItem(key);
-  if (saved) el.value = saved;
-});
-
-// Persist on every keystroke
-zoomFields.forEach(({ el, key }) => {
-  el.addEventListener('input', () => localStorage.setItem(key, el.value));
-});
 
 // ── WebSocket (live push) ─────────────────────────────────────────────────────
 
