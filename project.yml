@@ -1,7 +1,7 @@
 name: mlController
 
 options:
-  bundleIdPrefix: com.oliver
+  bundleIdPrefix: com.boinx
   deploymentTarget:
     macOS: "13.0"
   createIntermediateGroups: true
@@ -32,7 +32,7 @@ targets:
         LSUIElement: true
         NSPrincipalClass: NSApplication
         CFBundleDisplayName: mimoLive Controller
-        NSHumanReadableCopyright: "Copyright © 2024 Boinx Software Ltd. All rights reserved."
+        NSHumanReadableCopyright: "Copyright © 2025 Boinx Software International GmbH. All rights reserved."
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
 

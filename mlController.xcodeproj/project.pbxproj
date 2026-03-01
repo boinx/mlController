@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -18,11 +18,13 @@
 		BE2DE2621604F3D5EAF8B849 /* Swifter in Frameworks */ = {isa = PBXBuildFile; productRef = 866095FBC1864A38216F5BE2 /* Swifter */; };
 		C7A9D07E95221CC8A1B3A93B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9294EA28CA05771D834291D /* SettingsView.swift */; };
 		D56053ED407E55F35331EF00 /* WebServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FD828745AE83B43D56639B7 /* WebServer.swift */; };
+		FCD513A7A2B20FB1F6D3CF7B /* MimoLiveWebSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728B162995A88F007565F840 /* MimoLiveWebSocket.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		5F00B0D04DB91F65DD1A7972 /* MimoDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MimoDocument.swift; sourceTree = "<group>"; };
 		5FD828745AE83B43D56639B7 /* WebServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebServer.swift; sourceTree = "<group>"; };
+		728B162995A88F007565F840 /* MimoLiveWebSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MimoLiveWebSocket.swift; sourceTree = "<group>"; };
 		7A562B66BC8234EE65A253ED /* MimoLiveMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MimoLiveMonitor.swift; sourceTree = "<group>"; };
 		83D48C122C48A899186291C1 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		91820ED04DEAA6E3B5CC7E67 /* LocalDocumentScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDocumentScanner.swift; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 				91820ED04DEAA6E3B5CC7E67 /* LocalDocumentScanner.swift */,
 				C1EDE7F13A04DDE5F655A22B /* MimoLiveController.swift */,
 				7A562B66BC8234EE65A253ED /* MimoLiveMonitor.swift */,
+				728B162995A88F007565F840 /* MimoLiveWebSocket.swift */,
 				5FD828745AE83B43D56639B7 /* WebServer.swift */,
 			);
 			path = Services;
@@ -151,6 +154,7 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					242C6418A77F92EAB0D6783A = {
+						DevelopmentTeam = 6372P8EH2J;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -168,6 +172,7 @@
 			packageReferences = (
 				E04E8CBAA4B111D26A0C584C /* XCRemoteSwiftPackageReference "swifter" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -189,6 +194,7 @@
 				64C51EDCDFC7A53D37A3CD3F /* MimoLiveApp.swift in Sources */,
 				75333AE0D2EC3454CA420185 /* MimoLiveController.swift in Sources */,
 				ABA25074EB7255E4AE6EBC4F /* MimoLiveMonitor.swift in Sources */,
+				FCD513A7A2B20FB1F6D3CF7B /* MimoLiveWebSocket.swift in Sources */,
 				C7A9D07E95221CC8A1B3A93B /* SettingsView.swift in Sources */,
 				D56053ED407E55F35331EF00 /* WebServer.swift in Sources */,
 			);
