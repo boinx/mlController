@@ -3,8 +3,6 @@
 // ── State ────────────────────────────────────────────────────────────────────
 
 let lastStatus = null;
-let ws = null;
-let pollTimer = null;
 
 // ── DOM Refs ─────────────────────────────────────────────────────────────────
 
@@ -20,8 +18,6 @@ const errorBanner  = document.getElementById('error-banner');
 const btnStart     = document.getElementById('btn-start');
 const btnStop      = document.getElementById('btn-stop');
 const btnRestart   = document.getElementById('btn-restart');
-const zoomRow      = document.getElementById('zoom-row');
-const btnZoomOpen  = document.getElementById('btn-zoom-open');
 
 // ── Fetch & Render ────────────────────────────────────────────────────────────
 
@@ -31,7 +27,7 @@ async function refresh() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     errorBanner.classList.remove('visible');
-    render(data);
+    dashboardRender(data);
     lastUpdated.textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch (e) {
     errorBanner.classList.add('visible');
@@ -43,7 +39,7 @@ async function refresh() {
   }
 }
 
-function render(data) {
+function dashboardRender(data) {
   const running = !!data.running;
 
   // Status indicator
@@ -116,8 +112,6 @@ function setButtonState(running) {
   btnStart.disabled   = running;
   btnStop.disabled    = !running;
   btnRestart.disabled = !running;
-  btnZoomOpen.disabled = !running;
-  zoomRow.style.display = running ? '' : 'none';
 }
 
 // ── Commands ──────────────────────────────────────────────────────────────────
@@ -145,10 +139,6 @@ async function selectVersion(path) {
   } catch (e) {
     console.error('Select version failed:', e);
   }
-}
-
-function openZoomPage() {
-  window.open('/zoom.html', 'zoom', 'width=760,height=800');
 }
 
 async function openDoc(path) {
@@ -181,59 +171,3 @@ function baseName(path) {
   const dot = file.lastIndexOf('.');
   return dot > 0 ? file.slice(0, dot) : file;
 }
-
-// ── WebSocket (live push) ─────────────────────────────────────────────────────
-
-function connectWebSocket() {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${proto}//${location.host}/ws`);
-
-  ws.onopen = () => {
-    // Server pushes state — stop polling
-    stopPolling();
-    errorBanner.classList.remove('visible');
-  };
-
-  ws.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      errorBanner.classList.remove('visible');
-      render(data);
-      lastUpdated.textContent = 'Updated ' + new Date().toLocaleTimeString();
-    } catch (e) {
-      console.error('WebSocket parse error:', e);
-    }
-  };
-
-  ws.onclose = () => {
-    ws = null;
-    startPolling();
-    // Reconnect after 2 seconds
-    setTimeout(connectWebSocket, 2000);
-  };
-
-  ws.onerror = () => {
-    // onclose will fire after onerror, handling reconnect
-  };
-}
-
-// ── Polling Fallback ──────────────────────────────────────────────────────────
-
-function startPolling() {
-  if (!pollTimer) {
-    pollTimer = setInterval(refresh, 2000);
-  }
-}
-
-function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer);
-    pollTimer = null;
-  }
-}
-
-// ── Init ──────────────────────────────────────────────────────────────────────
-
-refresh();           // Immediate first fetch
-startPolling();      // Poll until WebSocket connects
-connectWebSocket();  // Try WebSocket

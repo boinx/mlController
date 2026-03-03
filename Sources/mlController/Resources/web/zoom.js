@@ -2,8 +2,6 @@
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-let ws = null;
-let pollTimer = null;
 let currentSources = [];
 let currentParticipants = [];
 let renderPending = false;    // true when a render was skipped due to open dropdown
@@ -11,10 +9,8 @@ let assignInFlight = false;   // true while an assignment API call is in progres
 
 // ── DOM Refs ─────────────────────────────────────────────────────────────────
 
-const container          = document.getElementById('sources-container');
+const zoomContainer      = document.getElementById('sources-container');
 const meetingInfo        = document.getElementById('meeting-info');
-const lastUpdated        = document.getElementById('last-updated');
-const errorBanner        = document.getElementById('error-banner');
 const recordingWarning   = document.getElementById('recording-warning');
 const joinSections       = document.getElementById('join-sections');
 const meetingActiveCard  = document.getElementById('meeting-active-card');
@@ -44,7 +40,7 @@ async function fetchZoomData() {
     if (srcData.error && !srcData.sources?.length) {
       currentSources = [];
       currentParticipants = [];
-      renderEmpty(srcData.error);
+      zoomRenderEmpty(srcData.error);
       return;
     }
 
@@ -54,11 +50,10 @@ async function fetchZoomData() {
       .sort((a, b) => a.name.localeCompare(b.name));
 
     errorBanner.classList.remove('visible');
-    render();
+    zoomRender();
     lastUpdated.textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch (e) {
-    errorBanner.classList.add('visible');
-    lastUpdated.textContent = 'Error at ' + new Date().toLocaleTimeString();
+    // Don't show error banner from zoom fetch — dashboard handles connection errors
   }
 }
 
@@ -69,7 +64,7 @@ function isDropdownOpen() {
   return focused && focused.classList.contains('source-select');
 }
 
-function render() {
+function zoomRender() {
   // Defer render while user is interacting with a dropdown or assignment is in-flight
   if (isDropdownOpen() || assignInFlight) {
     renderPending = true;
@@ -91,7 +86,7 @@ function render() {
   }
 
   if (currentSources.length === 0) {
-    renderEmpty('No Zoom sources in the current document');
+    zoomRenderEmpty('No Zoom sources in the current document');
     recordingWarning.classList.remove('visible');
     return;
   }
@@ -102,7 +97,7 @@ function render() {
   );
   recordingWarning.classList.toggle('visible', awaitingPermission);
 
-  container.innerHTML = currentSources.map(src => {
+  zoomContainer.innerHTML = currentSources.map(src => {
     const selType  = src['zoom-userselectiontype'] || 0;
     const userId   = src['zoom-userid'];
     const username = src['zoom-username'] || '';
@@ -160,8 +155,8 @@ function render() {
     : 'No active Zoom meeting';
 }
 
-function renderEmpty(msg) {
-  container.innerHTML = `<div class="empty-state">${esc(msg)}</div>`;
+function zoomRenderEmpty(msg) {
+  zoomContainer.innerHTML = `<div class="empty-state">${esc(msg)}</div>`;
   meetingInfo.textContent = '';
   recordingWarning.classList.remove('visible');
   joinSections.classList.remove('hidden');
@@ -332,53 +327,12 @@ async function requestRecordingPermission() {
   }
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function esc(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-// ── WebSocket (triggers re-fetch on state change) ────────────────────────────
-
-function connectWebSocket() {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${proto}//${location.host}/ws`);
-
-  ws.onopen = () => {
-    errorBanner.classList.remove('visible');
-  };
-
-  ws.onmessage = () => {
-    // Any state change from server → re-fetch zoom data
-    fetchZoomData();
-  };
-
-  ws.onclose = () => {
-    ws = null;
-    setTimeout(connectWebSocket, 2000);
-  };
-
-  ws.onerror = () => {};
-}
-
-// ── Polling Fallback ─────────────────────────────────────────────────────────
-
-function startPolling() {
-  if (!pollTimer) {
-    pollTimer = setInterval(fetchZoomData, 3000);
-  }
-}
-
 // ── Deferred Render Flush ─────────────────────────────────────────────────────
 // When a dropdown closes without making a selection, flush any pending render.
 document.addEventListener('focusout', (e) => {
   if (e.target && e.target.classList.contains('source-select') && renderPending) {
     // Small delay to let change event fire first if user made a selection
-    setTimeout(() => { if (renderPending && !assignInFlight) render(); }, 100);
+    setTimeout(() => { if (renderPending && !assignInFlight) zoomRender(); }, 100);
   }
 });
 
@@ -401,9 +355,3 @@ zoomFields.forEach(({ el, key }) => {
 zoomFields.forEach(({ el, key }) => {
   el.addEventListener('input', () => localStorage.setItem(key, el.value));
 });
-
-// ── Init ─────────────────────────────────────────────────────────────────────
-
-fetchZoomData();
-startPolling();
-connectWebSocket();

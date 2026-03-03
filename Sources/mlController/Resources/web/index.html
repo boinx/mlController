@@ -83,6 +83,42 @@
     50% { opacity: 1; transform: scale(1); }
   }
 
+  /* ── Tab Bar ────────────────────────────── */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 18px;
+    font-family: var(--font);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    border-radius: 0;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+  .tab-btn:active { transform: none; }
+  .tab-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+  /* ── Tab Content ────────────────────────── */
+  .tab-content { display: none; }
+  .tab-content.active {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
   /* ── Main Layout ─────────────────────────── */
   main {
     flex: 1;
@@ -170,6 +206,7 @@
   .btn-stop   { background: var(--red);   color: #fff; }
   .btn-restart{ background: var(--orange);color: #000; }
   .btn-zoom   { background: var(--blue);  color: #fff; }
+  .btn-leave  { background: var(--red);   color: #fff; }
 
   /* ── Version Picker ──────────────────────── */
   .version-row {
@@ -217,12 +254,6 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-  }
-
-  @media (max-width: 640px) {
-    .grid { grid-template-columns: 1fr; }
-    .controls { justify-content: flex-start; margin-left: 0; margin-top: 12px; }
-    .status-card { flex-wrap: wrap; }
   }
 
   /* ── Section Cards ───────────────────────── */
@@ -337,6 +368,187 @@
 
   .alert.visible { display: block; }
 
+  /* ── Zoom: Source Cards ──────────────────── */
+  .source-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .source-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .source-header .source-name {
+    color: var(--text);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.9rem;
+  }
+  .source-body {
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .source-assignment {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+  .source-assignment strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ── Zoom: Select Dropdown ──────────────── */
+  .source-select {
+    width: 100%;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 30px 8px 10px;
+    font-family: var(--font);
+    font-size: 0.85rem;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237b82a8'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  .source-select:focus { border-color: var(--accent); }
+  .source-select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── Zoom: Meeting Info ─────────────────── */
+  .meeting-info {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 8px 0;
+  }
+
+  /* ── Zoom: Join Form ────────────────────── */
+  .zoom-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+  .zoom-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .zoom-field label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .zoom-field input {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-family: var(--font);
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .zoom-field input:focus { border-color: var(--accent); }
+  .zoom-field input::placeholder { color: var(--text-muted); opacity: 0.5; }
+  .zoom-form-footer {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .zoom-form-footer .sublabel {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    flex: 1;
+  }
+
+  /* ── Zoom: Recording Warning ────────────── */
+  .recording-warning {
+    display: none;
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: rgba(245,166,35,0.12);
+    border: 1px solid rgba(245,166,35,0.3);
+    color: var(--orange);
+    line-height: 1.5;
+  }
+  .recording-warning.visible { display: block; }
+  .recording-warning .warning-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .recording-warning .warning-detail {
+    font-size: 0.78rem;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+  .recording-warning .warning-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .btn-warning {
+    background: var(--orange);
+    color: #000;
+    font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  .btn-warning:disabled { opacity: 0.5; cursor: not-allowed; }
+  .recording-warning .warning-status {
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+
+  /* ── Zoom: Meeting Active Indicator ─────── */
+  .meeting-active-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 10px var(--green);
+    flex-shrink: 0;
+  }
+
+  /* ── Zoom: Section Label ────────────────── */
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text-muted);
+    padding: 6px 0 0;
+  }
+
+  /* ── Utilities ──────────────────────────── */
+  .hidden { display: none !important; }
+
   /* ── Footer ──────────────────────────────── */
   footer {
     text-align: center;
@@ -344,6 +556,14 @@
     font-size: 0.72rem;
     color: var(--text-muted);
     border-top: 1px solid var(--border);
+  }
+
+  /* ── Responsive ──────────────────────────── */
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+    .zoom-form { grid-template-columns: 1fr; }
+    .controls { justify-content: flex-start; margin-left: 0; margin-top: 12px; }
+    .status-card { flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -361,61 +581,141 @@
   </div>
 </header>
 
+<nav class="tab-bar" id="tab-bar">
+  <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn" data-tab="zoom" id="tab-btn-zoom" style="display:none">Zoom</button>
+</nav>
+
 <main>
 
   <div class="alert" id="error-banner">
     Cannot reach mlController. Make sure the app is running on this machine.
   </div>
 
-  <!-- Status + Controls -->
-  <div class="status-card">
-    <div class="status-indicator stopped" id="status-dot"></div>
-    <div class="status-text">
-      <div class="label" id="status-label">Checking…</div>
-      <div class="sublabel" id="status-sub">Fetching status from mlController</div>
-    </div>
-    <div class="controls">
-      <button class="btn-start"   id="btn-start"   onclick="sendCommand('/api/start')"   disabled>▶ Start</button>
-      <button class="btn-stop"    id="btn-stop"    onclick="sendCommand('/api/stop')"    disabled>■ Stop</button>
-      <button class="btn-restart" id="btn-restart" onclick="sendCommand('/api/restart')" disabled>↺ Restart</button>
-    </div>
-  </div>
+  <!-- ═══ Dashboard Tab ═══ -->
+  <div class="tab-content active" id="tab-dashboard">
 
-  <!-- Version Picker (hidden when only one install) -->
-  <div class="version-row" id="version-row" style="display:none">
-    <label for="version-select">🎬 mimoLive Version</label>
-    <select id="version-select" onchange="selectVersion(this.value)"></select>
-  </div>
-
-  <!-- Zoom -->
-  <div class="status-card" id="zoom-row" style="display:none">
-    <div class="zoom-icon">📹</div>
-    <div class="status-text">
-      <div class="label">Zoom Meeting</div>
-      <div class="sublabel">Join meetings and assign sources</div>
-    </div>
-    <div class="controls">
-      <button class="btn-zoom" id="btn-zoom-open" onclick="openZoomPage()" disabled>Open Zoom Panel</button>
-    </div>
-  </div>
-
-  <!-- Document Cards -->
-  <div class="grid">
-    <div class="card">
-      <div class="card-header">
-        📺 Open in mimoLive
-        <span class="count" id="open-count">0</span>
+    <!-- Status + Controls -->
+    <div class="status-card">
+      <div class="status-indicator stopped" id="status-dot"></div>
+      <div class="status-text">
+        <div class="label" id="status-label">Checking…</div>
+        <div class="sublabel" id="status-sub">Fetching status from mlController</div>
       </div>
-      <div class="card-body" id="open-docs"></div>
+      <div class="controls">
+        <button class="btn-start"   id="btn-start"   onclick="sendCommand('/api/start')"   disabled>▶ Start</button>
+        <button class="btn-stop"    id="btn-stop"    onclick="sendCommand('/api/stop')"    disabled>■ Stop</button>
+        <button class="btn-restart" id="btn-restart" onclick="sendCommand('/api/restart')" disabled>↺ Restart</button>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="card-header">
-        📁 Available Documents
-        <span class="count" id="local-count">0</span>
-      </div>
-      <div class="card-body" id="local-docs"></div>
+    <!-- Version Picker (hidden when only one install) -->
+    <div class="version-row" id="version-row" style="display:none">
+      <label for="version-select">🎬 mimoLive Version</label>
+      <select id="version-select" onchange="selectVersion(this.value)"></select>
     </div>
+
+    <!-- Document Cards -->
+    <div class="grid">
+      <div class="card">
+        <div class="card-header">
+          📺 Open in mimoLive
+          <span class="count" id="open-count">0</span>
+        </div>
+        <div class="card-body" id="open-docs"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          📁 Available Documents
+          <span class="count" id="local-count">0</span>
+        </div>
+        <div class="card-body" id="local-docs"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ Zoom Tab ═══ -->
+  <div class="tab-content" id="tab-zoom">
+
+    <!-- In Meeting (shown when meeting is active) -->
+    <div class="status-card hidden" id="meeting-active-card">
+      <div class="meeting-active-dot"></div>
+      <div class="status-text">
+        <div class="label">In Zoom Meeting</div>
+        <div class="sublabel" id="meeting-active-sub"></div>
+      </div>
+      <div class="controls">
+        <button class="btn-leave" id="btn-leave" onclick="leaveZoomMeeting()">Leave Meeting</button>
+      </div>
+    </div>
+
+    <!-- Join sections (hidden when meeting is active) -->
+    <div id="join-sections">
+      <!-- Join Demo Meeting -->
+      <div class="status-card" style="margin-bottom:14px;">
+        <div class="zoom-icon">📹</div>
+        <div class="status-text">
+          <div class="label">Demo Meeting</div>
+          <div class="sublabel" id="join-demo-sub">Join the mimoLive Zoom demo meeting</div>
+        </div>
+        <div class="controls">
+          <button class="btn-zoom" id="btn-join-demo" onclick="joinZoomDemo()">Join Demo</button>
+        </div>
+      </div>
+
+      <!-- Custom Zoom Join -->
+      <div class="status-card" style="flex-direction:column; align-items:stretch; gap:14px;">
+        <div style="display:flex; align-items:center; gap:18px;">
+          <div class="zoom-icon">📹</div>
+          <div class="status-text">
+            <div class="label">Join Zoom Meeting</div>
+            <div class="sublabel">Enter meeting details to join via mimoLive</div>
+          </div>
+        </div>
+        <div class="zoom-form">
+          <div class="zoom-field">
+            <label for="zoom-meeting-id">Meeting ID *</label>
+            <input type="text" id="zoom-meeting-id" placeholder="e.g. 123 456 7890">
+          </div>
+          <div class="zoom-field">
+            <label for="zoom-passcode">Passcode</label>
+            <input type="text" id="zoom-passcode" placeholder="Meeting passcode">
+          </div>
+          <div class="zoom-field">
+            <label for="zoom-display-name">Display Name</label>
+            <input type="text" id="zoom-display-name" placeholder="mimoLive">
+          </div>
+          <div class="zoom-field">
+            <label for="zoom-account-name">Zoom Account</label>
+            <input type="text" id="zoom-account-name" placeholder="Zoom account name">
+          </div>
+          <div class="zoom-form-footer">
+            <span class="sublabel" id="join-custom-sub"></span>
+            <button class="btn-zoom" id="btn-join-custom" onclick="joinZoomCustom()">Join Meeting</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recording Permission Warning -->
+    <div class="recording-warning" id="recording-warning">
+      <div class="warning-title">Awaiting Recording Permission</div>
+      <div class="warning-detail">The Zoom meeting host needs to grant recording permission to mimoLive before video feeds become available.</div>
+      <div class="warning-actions">
+        <button class="btn-warning" id="btn-request-recording" onclick="requestRecordingPermission()">Request Permission</button>
+        <span class="warning-status" id="recording-request-status"></span>
+      </div>
+    </div>
+
+    <!-- Source Assignment -->
+    <div class="section-label">Source Assignment</div>
+    <div id="sources-container">
+      <div class="empty-state">Loading Zoom sources...</div>
+    </div>
+    <div class="meeting-info" id="meeting-info"></div>
+
   </div>
 
 </main>
@@ -425,5 +725,7 @@
 </footer>
 
 <script src="/app.js"></script>
+<script src="/zoom.js"></script>
+<script src="/tabs.js"></script>
 </body>
 </html>

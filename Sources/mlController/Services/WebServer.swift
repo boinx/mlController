@@ -94,8 +94,8 @@ final class WebServer: @unchecked Sendable {
         // Static assets
         server.GET["/"] = serveFile("index", ext: "html", mimeType: "text/html; charset=utf-8")
         server.GET["/app.js"] = serveFile("app", ext: "js", mimeType: "application/javascript")
-        server.GET["/zoom.html"] = serveFile("zoom", ext: "html", mimeType: "text/html; charset=utf-8")
         server.GET["/zoom.js"] = serveFile("zoom", ext: "js", mimeType: "application/javascript")
+        server.GET["/tabs.js"] = serveFile("tabs", ext: "js", mimeType: "application/javascript")
 
         // WebSocket for live status push
         server.GET["/ws"] = websocket(
