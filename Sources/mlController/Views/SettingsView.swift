@@ -1,8 +1,25 @@
 import SwiftUI
 
+enum SettingsPage: String, CaseIterable, Identifiable {
+    case mimoLive = "mimoLive"
+    case web = "Web Dashboard"
+    case about = "About"
+
+    var id: Self { self }
+
+    var icon: String {
+        switch self {
+        case .mimoLive: return "video.circle"
+        case .web:      return "globe"
+        case .about:    return "info.circle"
+        }
+    }
+}
+
 struct SettingsView: View {
 
     @EnvironmentObject var appState: AppState
+    @State private var selection: SettingsPage? = .mimoLive
     @State private var newPassword: String = ""
     @State private var confirmPassword: String = ""
     @State private var showPasswordMismatch = false
@@ -12,17 +29,20 @@ struct SettingsView: View {
     @State private var showPortSaved = false
 
     var body: some View {
-        TabView {
-            mimoLiveTab
-                .tabItem { Label("mimoLive", systemImage: "video.circle") }
-
-            webTab
-                .tabItem { Label("Web Dashboard", systemImage: "globe") }
-
-            aboutTab
-                .tabItem { Label("About", systemImage: "info.circle") }
+        NavigationSplitView {
+            List(SettingsPage.allCases, selection: $selection) { page in
+                Label(page.rawValue, systemImage: page.icon)
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
+        } detail: {
+            switch selection ?? .mimoLive {
+            case .mimoLive: mimoLiveDetail
+            case .web:      webDetail
+            case .about:    aboutDetail
+            }
         }
-        .frame(width: 480, height: 360)
+        .frame(width: 620, height: 460)
         .onAppear { portString = String(appState.webServerPort) }
     }
 
@@ -37,9 +57,9 @@ struct SettingsView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { showPortSaved = false }
     }
 
-    // MARK: - mimoLive Tab
+    // MARK: - mimoLive
 
-    private var mimoLiveTab: some View {
+    private var mimoLiveDetail: some View {
         Form {
             Section {
                 Toggle("Launch at Login", isOn: Binding(
@@ -50,8 +70,6 @@ struct SettingsView: View {
                 Text("Startup")
             } footer: {
                 Text("Automatically start mlController when you log in.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
 
             Section {
@@ -63,7 +81,6 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                     }
                 } else {
-                    // nil = system default (whichever NSWorkspace resolves first)
                     Picker("Version to launch", selection: $appState.selectedMimoLiveURL) {
                         Text("System Default")
                             .tag(Optional<URL>.none)
@@ -85,8 +102,6 @@ struct SettingsView: View {
                 Text("Installation")
             } footer: {
                 Text("Select which version to launch when pressing Start. \"System Default\" uses whichever version macOS considers primary.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
 
             Section {
@@ -98,12 +113,11 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .padding(.vertical, 8)
     }
 
-    // MARK: - Web Tab
+    // MARK: - Web Dashboard
 
-    private var webTab: some View {
+    private var webDetail: some View {
         Form {
             Section {
                 HStack {
@@ -117,11 +131,11 @@ struct SettingsView: View {
                         .disabled(portString == String(appState.webServerPort))
                 }
                 if showPortError {
-                    Text("Enter a valid port number (1024–65535)")
+                    Text("Enter a valid port number (1024\u{2013}65535)")
                         .foregroundColor(.red).font(.caption)
                 }
                 if showPortSaved {
-                    Label("Port changed — server restarted", systemImage: "checkmark.circle.fill")
+                    Label("Port changed \u{2014} server restarted", systemImage: "checkmark.circle.fill")
                         .foregroundColor(.green).font(.caption)
                 }
                 LabeledContent("URL") {
@@ -155,10 +169,12 @@ struct SettingsView: View {
                         .disabled(newPassword.isEmpty)
 
                         if showPasswordMismatch {
-                            Text("Passwords don't match").foregroundColor(.red).font(.caption)
+                            Text("Passwords don't match")
+                                .foregroundColor(.red).font(.caption)
                         }
                         if showSaved {
-                            Label("Saved", systemImage: "checkmark.circle.fill").foregroundColor(.green).font(.caption)
+                            Label("Saved", systemImage: "checkmark.circle.fill")
+                                .foregroundColor(.green).font(.caption)
                         }
                     }
 
@@ -171,59 +187,55 @@ struct SettingsView: View {
                 Text("Authentication")
             } footer: {
                 Text("Clients must supply the password via HTTP Basic Auth or the X-mlcontroller-password header.")
-                    .font(.caption).foregroundColor(.secondary)
             }
         }
         .formStyle(.grouped)
-        .padding(.vertical, 8)
     }
 
-    // MARK: - About Tab
+    // MARK: - About
 
-    private var aboutTab: some View {
-        VStack(spacing: 16) {
+    private var aboutDetail: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
             Image(systemName: "video.circle.fill")
-                .font(.system(size: 48))
+                .font(.system(size: 56))
                 .foregroundColor(.accentColor)
 
             VStack(spacing: 4) {
                 Text("mlController")
-                    .font(.title2.bold())
+                    .font(.title.bold())
                 Text("Version 1.0.0")
                     .foregroundColor(.secondary)
-                    .font(.subheadline)
             }
 
             Divider()
+                .frame(width: 200)
 
-            VStack(alignment: .leading, spacing: 8) {
-                InfoRow(label: "Installations found",
-                        value: "\(appState.availableMimoLiveApps.count)")
-                InfoRow(label: "Active version",
-                        value: appState.selectedMimoLiveURL?.deletingPathExtension().lastPathComponent ?? "System Default")
-                InfoRow(label: "mlController Port",
-                        value: String(appState.webServerPort))
+            Grid(alignment: .leading, verticalSpacing: 6) {
+                GridRow {
+                    Text("Installations found")
+                        .foregroundColor(.secondary)
+                        .gridColumnAlignment(.trailing)
+                    Text(String(appState.availableMimoLiveApps.count))
+                        .font(.body.monospaced())
+                }
+                GridRow {
+                    Text("Active version")
+                        .foregroundColor(.secondary)
+                    Text(appState.selectedMimoLiveURL?.deletingPathExtension().lastPathComponent ?? "System Default")
+                        .font(.body.monospaced())
+                }
+                GridRow {
+                    Text("Web server port")
+                        .foregroundColor(.secondary)
+                    Text(String(appState.webServerPort))
+                        .font(.body.monospaced())
+                }
             }
-            .padding(.horizontal)
 
             Spacer()
         }
-        .padding()
-    }
-}
-
-private struct InfoRow: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack {
-            Text(label)
-                .foregroundColor(.secondary)
-                .font(.caption)
-                .frame(width: 160, alignment: .trailing)
-            Text(value)
-                .font(.caption.monospaced())
-        }
+        .frame(maxWidth: .infinity)
     }
 }

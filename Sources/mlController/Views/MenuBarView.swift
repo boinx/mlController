@@ -156,29 +156,36 @@ struct MenuBarView: View {
             Divider()
 
             // ── Footer ─────────────────────────────────────────────────
-            HStack {
-                Link(destination: URL(string: "http://localhost:\(appState.webServerPort)")!) {
+            HStack(spacing: 8) {
+                Button {
+                    NSWorkspace.shared.open(URL(string: "http://localhost:\(appState.webServerPort)")!)
+                } label: {
                     Label("Web Dashboard", systemImage: "globe")
                         .font(.caption)
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
                 .help("Open web dashboard in browser")
 
                 Spacer()
 
-                // Open Settings window
-                Button("Settings") {
+                Button {
                     appState.openSettings()
+                } label: {
+                    Label("Settings", systemImage: "gear")
+                        .font(.caption)
                 }
-                .font(.caption)
-                .buttonStyle(.plain)
-                .foregroundColor(.secondary)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
 
-                Button("Quit") {
+                Button {
                     NSApp.terminate(nil)
+                } label: {
+                    Label("Quit", systemImage: "power")
+                        .font(.caption)
                 }
-                .font(.caption)
-                .buttonStyle(.plain)
-                .foregroundColor(.secondary)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)

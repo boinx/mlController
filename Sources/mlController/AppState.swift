@@ -256,7 +256,7 @@ final class AppState: ObservableObject {
             let window = NSWindow(contentViewController: hosting)
             window.title = "mlController Settings"
             window.styleMask = [.titled, .closable, .miniaturizable]
-            window.setContentSize(NSSize(width: 480, height: 360))
+            window.setContentSize(NSSize(width: 620, height: 460))
             window.center()
             window.isReleasedWhenClosed = false
             settingsWindowController = NSWindowController(window: window)
