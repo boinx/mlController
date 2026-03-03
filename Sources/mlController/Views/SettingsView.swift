@@ -27,6 +27,19 @@ struct SettingsView: View {
     private var mimoLiveTab: some View {
         Form {
             Section {
+                Toggle("Launch at Login", isOn: Binding(
+                    get: { appState.launchAtLogin },
+                    set: { appState.setLaunchAtLogin($0) }
+                ))
+            } header: {
+                Text("Startup")
+            } footer: {
+                Text("Automatically start mlController when you log in.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Section {
                 if appState.availableMimoLiveApps.isEmpty {
                     HStack {
                         Image(systemName: "exclamationmark.triangle")

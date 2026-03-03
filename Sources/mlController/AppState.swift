@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import AppKit
 import SwiftUI
+import ServiceManagement
 
 @MainActor
 final class AppState: ObservableObject {
@@ -42,6 +43,24 @@ final class AppState: ObservableObject {
         didSet {
             UserDefaults.standard.set(webPassword, forKey: "webPassword")
             pushSnapshotToServer()
+        }
+    }
+
+    /// Whether the app is registered to launch at login (reads live from SMAppService)
+    var launchAtLogin: Bool {
+        SMAppService.mainApp.status == .enabled
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        objectWillChange.send()
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            print("[mlController] Failed to \(enabled ? "enable" : "disable") launch at login: \(error)")
         }
     }
 
