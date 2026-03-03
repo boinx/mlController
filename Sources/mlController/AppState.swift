@@ -14,7 +14,11 @@ final class AppState: ObservableObject {
     @Published var isMimoLiveRunning: Bool = false
     @Published var openDocuments: [MimoDocument] = []
     @Published var localDocuments: [URL] = []
-    @Published var webServerPort: UInt16 = 8990
+    @Published var webServerPort: UInt16 = 8990 {
+        didSet {
+            UserDefaults.standard.set(Int(webServerPort), forKey: "webServerPort")
+        }
+    }
 
     /// All mimoLive installations found on this machine
     @Published var availableMimoLiveApps: [MimoLiveApp] = []
@@ -79,6 +83,10 @@ final class AppState: ObservableObject {
     private var pollingTask: Task<Void, Never>?
 
     init() {
+        let savedPort = UserDefaults.standard.integer(forKey: "webServerPort")
+        if savedPort > 0 && savedPort <= UInt16.max {
+            webServerPort = UInt16(savedPort)
+        }
         passwordEnabled = UserDefaults.standard.bool(forKey: "passwordEnabled")
         webPassword = UserDefaults.standard.string(forKey: "webPassword") ?? ""
     }
@@ -132,6 +140,16 @@ final class AppState: ObservableObject {
         }
         server.start()
         self.webServer = server
+        pushSnapshotToServer()
+    }
+
+    func changePort(to newPort: UInt16) {
+        guard newPort != webServerPort else { return }
+        webServer?.stop()
+        webServer = nil
+        webServerPort = newPort
+        startWebServer()
+        loadDocIcon()
         pushSnapshotToServer()
     }
 

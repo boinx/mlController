@@ -7,6 +7,9 @@ struct SettingsView: View {
     @State private var confirmPassword: String = ""
     @State private var showPasswordMismatch = false
     @State private var showSaved = false
+    @State private var portString: String = ""
+    @State private var showPortError = false
+    @State private var showPortSaved = false
 
     var body: some View {
         TabView {
@@ -20,6 +23,18 @@ struct SettingsView: View {
                 .tabItem { Label("About", systemImage: "info.circle") }
         }
         .frame(width: 480, height: 360)
+        .onAppear { portString = String(appState.webServerPort) }
+    }
+
+    private func applyPort() {
+        guard let port = UInt16(portString), port >= 1024 else {
+            showPortError = true
+            return
+        }
+        showPortError = false
+        appState.changePort(to: port)
+        showPortSaved = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { showPortSaved = false }
     }
 
     // MARK: - mimoLive Tab
@@ -91,12 +106,26 @@ struct SettingsView: View {
     private var webTab: some View {
         Form {
             Section {
-                LabeledContent("Port") {
-                    Text("\(appState.webServerPort)")
-                        .foregroundColor(.secondary)
+                HStack {
+                    Text("Port")
+                    Spacer()
+                    TextField("Port", text: $portString)
+                        .frame(width: 80)
+                        .multilineTextAlignment(.trailing)
+                        .onSubmit { applyPort() }
+                    Button("Apply") { applyPort() }
+                        .disabled(portString == String(appState.webServerPort))
+                }
+                if showPortError {
+                    Text("Enter a valid port number (1024–65535)")
+                        .foregroundColor(.red).font(.caption)
+                }
+                if showPortSaved {
+                    Label("Port changed — server restarted", systemImage: "checkmark.circle.fill")
+                        .foregroundColor(.green).font(.caption)
                 }
                 LabeledContent("URL") {
-                    Link("http://localhost:\(appState.webServerPort)",
+                    Link("http://localhost:\(String(appState.webServerPort))",
                          destination: URL(string: "http://localhost:\(appState.webServerPort)")!)
                 }
             } header: {
@@ -173,7 +202,7 @@ struct SettingsView: View {
                 InfoRow(label: "Active version",
                         value: appState.selectedMimoLiveURL?.deletingPathExtension().lastPathComponent ?? "System Default")
                 InfoRow(label: "mlController Port",
-                        value: "\(appState.webServerPort)")
+                        value: String(appState.webServerPort))
             }
             .padding(.horizontal)
 
