@@ -198,14 +198,14 @@ struct SettingsView: View {
         VStack(spacing: 20) {
             Spacer()
 
-            Image(systemName: "video.circle.fill")
-                .font(.system(size: 56))
-                .foregroundColor(.accentColor)
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 96, height: 96)
 
             VStack(spacing: 4) {
                 Text("mlController")
                     .font(.title.bold())
-                Text("Version 1.0.0")
+                Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")")
                     .foregroundColor(.secondary)
             }
 

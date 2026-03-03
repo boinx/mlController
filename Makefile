@@ -62,6 +62,9 @@ bundle: build
 	    -e 's/\$$(PRODUCT_NAME)/$(APP_NAME)/g' \
 	    Info.plist > $(CONTENTS)/Info.plist
 
+	@# App icon
+	cp Sources/mlController/Resources/AppIcon.icns $(RESOURCES_DIR)/AppIcon.icns
+
 	@# Web assets — copy directly to main Resources so Bundle.main can find them
 	cp -r Sources/mlController/Resources/web $(RESOURCES_DIR)/web
 
@@ -105,6 +108,9 @@ sign: build
 	    -e 's/\$$(PRODUCT_BUNDLE_IDENTIFIER)/$(BUNDLE_ID)/g' \
 	    -e 's/\$$(PRODUCT_NAME)/$(APP_NAME)/g' \
 	    Info.plist > $(CONTENTS)/Info.plist
+
+	@# App icon
+	cp Sources/mlController/Resources/AppIcon.icns $(RESOURCES_DIR)/AppIcon.icns
 
 	@# Web assets
 	cp -r Sources/mlController/Resources/web $(RESOURCES_DIR)/web
