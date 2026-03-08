@@ -3,6 +3,7 @@
 // ── State ────────────────────────────────────────────────────────────────────
 
 let lastStatus = null;
+let showTimerInterval = null;
 
 // ── DOM Refs ─────────────────────────────────────────────────────────────────
 
@@ -171,21 +172,8 @@ function renderOpenDoc(doc) {
   if (doc.layerCount > 0) {
     meta.push(`<span class="doc-meta-item"><span class="meta-icon">◻️</span> ${doc.layerCount} layer${doc.layerCount !== 1 ? 's' : ''}</span>`);
   }
-  if (isLive && doc.formattedDuration && doc.formattedDuration !== '00:00:00') {
-    meta.push(`<span class="doc-meta-item"><span class="meta-icon">⏳</span> ${esc(doc.formattedDuration)}</span>`);
-  }
-
-  // Build output badges (only show active ones or all when live)
-  const outputs = (doc.outputs || []);
-  const activeOutputs = outputs.filter(o => o.liveState === 'live');
-  let outputsHtml = '';
-  if (activeOutputs.length > 0) {
-    outputsHtml = '<div class="doc-outputs">' +
-      activeOutputs.map(o =>
-        `<span class="output-badge output-live">${esc(outputLabel(o.type))}</span>`
-      ).join('') +
-      '</div>';
-  }
+  // Build show control section
+  const showControlHtml = renderShowControl(doc);
 
   // Build collapsible output destinations section
   const destinations = (doc.outputDestinations || []);
@@ -211,7 +199,7 @@ function renderOpenDoc(doc) {
       ${badge}
     </div>
     ${meta.length ? '<div class="doc-meta">' + meta.join('') + '</div>' : ''}
-    ${outputsHtml}
+    ${showControlHtml}
     ${destHtml}
   </div>`;
 }
@@ -226,6 +214,85 @@ function outputLabel(type) {
   }
 }
 
+// ── Show Control ─────────────────────────────────────────────────────────────
+
+function renderShowControl(doc) {
+  const isLive = doc.liveState === 'live';
+  const destinations = doc.outputDestinations || [];
+
+  // Collect outputs relevant to the show
+  const showOutputs = isLive
+    ? destinations.filter(d => d.stopsWithShow)
+    : destinations.filter(d => d.startsWithShow);
+
+  const btn = isLive
+    ? `<button class="btn-show btn-show-stop" onclick="toggleShow('${esc(doc.id)}', 'setOff')">■ Stop Show</button>`
+    : `<button class="btn-show btn-show-start" onclick="toggleShow('${esc(doc.id)}', 'setLive')">▶ Start Show</button>`;
+
+  const timerHtml = isLive
+    ? `<span class="show-timer" id="show-timer-${esc(doc.id)}" data-show-start="${esc(doc.showStart || '')}">${esc(doc.formattedDuration || '00:00:00')}</span>`
+    : '';
+
+  const tagsHtml = showOutputs.length > 0
+    ? '<div class="show-output-tags">' +
+      showOutputs.map(d => `<span class="show-output-tag">${esc(d.title)}</span>`).join('') +
+      '</div>'
+    : '';
+
+  // Start/stop the client-side timer
+  startShowTimer(isLive ? doc.id : null, doc.showStart);
+
+  return `<div class="show-control${isLive ? ' is-live' : ''}">
+    ${btn}
+    ${timerHtml}
+    ${tagsHtml}
+  </div>`;
+}
+
+async function toggleShow(docId, action) {
+  try {
+    const res = await fetch('/api/show/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ docId, action })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    setTimeout(refresh, 500);
+    setTimeout(refresh, 2000);
+  } catch (e) {
+    console.error('Toggle show failed:', e);
+  }
+}
+
+// ── Show Timer ───────────────────────────────────────────────────────────────
+
+function startShowTimer(liveDocId, showStart) {
+  // Clear any existing timer
+  if (showTimerInterval) {
+    clearInterval(showTimerInterval);
+    showTimerInterval = null;
+  }
+  if (!liveDocId || !showStart) return;
+
+  const startTime = new Date(showStart).getTime();
+  if (isNaN(startTime)) return;
+
+  function updateTimer() {
+    const el = document.getElementById('show-timer-' + liveDocId);
+    if (!el) { clearInterval(showTimerInterval); showTimerInterval = null; return; }
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+    const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    el.textContent = `${h}:${m}:${s}`;
+  }
+
+  updateTimer();
+  showTimerInterval = setInterval(updateTimer, 1000);
+}
+
 // ── Output Destinations ──────────────────────────────────────────────────────
 
 function renderOutputDest(docId, dest) {
@@ -235,21 +302,12 @@ function renderOutputDest(docId, dest) {
   // setLive to start, setOff to stop
   const action = state === 'live' ? 'setOff' : 'setLive';
 
-  // Flags row
-  const flags = [];
-  if (dest.startsWithShow) flags.push('starts with show');
-  if (dest.stopsWithShow) flags.push('stops with show');
-  const flagsHtml = flags.length > 0
-    ? '<div class="output-dest-flags">' + flags.map(f => `<span class="output-dest-flag">${esc(f)}</span>`).join('') + '</div>'
-    : '';
-
   const disabledAttr = (!dest.readyToGoLive && state !== 'live') ? ' disabled title="Not ready to go live"' : '';
 
   return `<div class="output-dest-item">
     <div class="output-dest-info">
       <div class="output-dest-title">${esc(dest.title)}</div>
       ${dest.summary ? `<div class="output-dest-summary" title="${esc(dest.summary)}">${esc(dest.summary)}</div>` : ''}
-      ${flagsHtml}
     </div>
     <button class="btn-toggle-output ${btnClass}"
             onclick="toggleOutputDestination('${esc(docId)}', '${esc(dest.id)}', '${action}')"${disabledAttr}>

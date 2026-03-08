@@ -135,6 +135,7 @@ final class WebServer: @unchecked Sendable {
         server.POST["/api/zoom/leave"] = handleZoomLeave
         server.POST["/api/zoom/meetingaction"] = handleZoomMeetingAction
         server.POST["/api/output-destination/toggle"] = handleOutputDestinationToggle
+        server.POST["/api/show/toggle"] = handleShowToggle
     }
 
     // MARK: - Static File Serving (reads from Bundle.module)
@@ -527,6 +528,38 @@ final class WebServer: @unchecked Sendable {
             if let error = error { return jsonResponse(["error": error]) }
 
             // Trigger AppState refresh so the snapshot (and WebSocket broadcast) updates promptly
+            DispatchQueue.main.async { self.onRefreshNeeded?() }
+
+            if let data = data,
+               let respJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                return jsonResponse(respJson)
+            }
+            return jsonResponse(["status": "ok"])
+        }
+    }
+
+    // MARK: - Show Control (Start/Stop Show)
+
+    /// Start or stop a show via mimoLive dedicated endpoints.
+    /// Uses GET /api/v1/documents/{docId}/setLive or /setOff.
+    private var handleShowToggle: ((HttpRequest) -> HttpResponse) {
+        return { [weak self] request in
+            guard let self = self else { return .internalServerError }
+            let bodyData = Data(request.body)
+            guard let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
+                  let docId = json["docId"] as? String, !docId.isEmpty,
+                  let action = json["action"] as? String, !action.isEmpty else {
+                return .badRequest(.text("Missing 'docId' or 'action'"))
+            }
+
+            let endpoint = action == "setLive" ? "setLive" : "setOff"
+            guard let url = URL(string: "http://localhost:8989/api/v1/documents/\(docId)/\(endpoint)") else {
+                return jsonResponse(["error": "Failed to build URL"])
+            }
+
+            let (data, error) = self.syncGET(url)
+            if let error = error { return jsonResponse(["error": error]) }
+
             DispatchQueue.main.async { self.onRefreshNeeded?() }
 
             if let data = data,

@@ -62,9 +62,9 @@ struct MimoDocumentAttributes: Codable {
     let name: String
     let filepath: String?
     let liveState: String?
-    let duration: Int?
+    let duration: Double?
     let formattedDuration: String?
-    let showStart: String?
+    let showStart: Double?          // Core Foundation timestamp (seconds since 2001-01-01)
     let metadata: MimoDocumentMetadata?
     let outputs: [[String: String]]?
 
@@ -117,9 +117,18 @@ extension MimoDocument {
         self.width = data.attributes.metadata?.width ?? 0
         self.height = data.attributes.metadata?.height ?? 0
         self.framerate = data.attributes.metadata?.framerate ?? 0
-        self.duration = data.attributes.duration ?? 0
+        self.duration = Int(data.attributes.duration ?? 0)
         self.formattedDuration = data.attributes.formattedDuration ?? "00:00:00"
-        self.showStart = data.attributes.showStart
+
+        // Convert Core Foundation timestamp to ISO 8601 for the browser
+        if let cfTimestamp = data.attributes.showStart {
+            let date = Date(timeIntervalSinceReferenceDate: cfTimestamp)
+            let fmt = ISO8601DateFormatter()
+            fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            self.showStart = fmt.string(from: date)
+        } else {
+            self.showStart = nil
+        }
         self.sourceCount = data.relationships?.sources?.data?.count ?? 0
         self.layerCount = data.relationships?.layers?.data?.count ?? 0
 
