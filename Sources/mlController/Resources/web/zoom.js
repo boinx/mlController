@@ -2,8 +2,6 @@
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-let ws = null;
-let pollTimer = null;
 let currentSources = [];
 let currentParticipants = [];
 let renderPending = false;    // true when a render was skipped due to open dropdown
@@ -11,10 +9,8 @@ let assignInFlight = false;   // true while an assignment API call is in progres
 
 // ── DOM Refs ─────────────────────────────────────────────────────────────────
 
-const container          = document.getElementById('sources-container');
+const zoomContainer      = document.getElementById('sources-container');
 const meetingInfo        = document.getElementById('meeting-info');
-const lastUpdated        = document.getElementById('last-updated');
-const errorBanner        = document.getElementById('error-banner');
 const recordingWarning   = document.getElementById('recording-warning');
 const joinSections       = document.getElementById('join-sections');
 const meetingActiveCard  = document.getElementById('meeting-active-card');
@@ -24,6 +20,8 @@ const btnJoinDemo        = document.getElementById('btn-join-demo');
 const joinDemoSub        = document.getElementById('join-demo-sub');
 const btnJoinCustom      = document.getElementById('btn-join-custom');
 const joinCustomSub      = document.getElementById('join-custom-sub');
+const meetingSettingsSection = document.getElementById('meeting-settings-section');
+const meetingActionFeedback  = document.getElementById('meeting-action-feedback');
 const zoomMeetingId      = document.getElementById('zoom-meeting-id');
 const zoomPasscode       = document.getElementById('zoom-passcode');
 const zoomDisplayName    = document.getElementById('zoom-display-name');
@@ -41,24 +39,16 @@ async function fetchZoomData() {
     const srcData  = await srcRes.json();
     const partData = await partRes.json();
 
-    if (srcData.error && !srcData.sources?.length) {
-      currentSources = [];
-      currentParticipants = [];
-      renderEmpty(srcData.error);
-      return;
-    }
-
     currentSources = srcData.sources || [];
     currentParticipants = (partData.participants || [])
       .filter(p => p.name)
       .sort((a, b) => a.name.localeCompare(b.name));
 
     errorBanner.classList.remove('visible');
-    render();
+    zoomRender();
     lastUpdated.textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch (e) {
-    errorBanner.classList.add('visible');
-    lastUpdated.textContent = 'Error at ' + new Date().toLocaleTimeString();
+    // Don't show error banner from zoom fetch — dashboard handles connection errors
   }
 }
 
@@ -69,7 +59,7 @@ function isDropdownOpen() {
   return focused && focused.classList.contains('source-select');
 }
 
-function render() {
+function zoomRender() {
   // Defer render while user is interacting with a dropdown or assignment is in-flight
   if (isDropdownOpen() || assignInFlight) {
     renderPending = true;
@@ -81,6 +71,7 @@ function render() {
   const inMeeting = currentParticipants.length > 0;
   joinSections.classList.toggle('hidden', inMeeting);
   meetingActiveCard.classList.toggle('hidden', !inMeeting);
+  meetingSettingsSection.classList.toggle('hidden', !inMeeting);
   if (inMeeting) {
     const host = currentParticipants.find(p => p.userRole === 'Host');
     const count = currentParticipants.length;
@@ -91,7 +82,8 @@ function render() {
   }
 
   if (currentSources.length === 0) {
-    renderEmpty('No Zoom sources in the current document');
+    zoomContainer.innerHTML = `<div class="empty-state">${esc('No Zoom sources in the current document')}</div>`;
+    meetingInfo.textContent = '';
     recordingWarning.classList.remove('visible');
     return;
   }
@@ -102,7 +94,7 @@ function render() {
   );
   recordingWarning.classList.toggle('visible', awaitingPermission);
 
-  container.innerHTML = currentSources.map(src => {
+  zoomContainer.innerHTML = currentSources.map(src => {
     const selType  = src['zoom-userselectiontype'] || 0;
     const userId   = src['zoom-userid'];
     const username = src['zoom-username'] || '';
@@ -160,12 +152,13 @@ function render() {
     : 'No active Zoom meeting';
 }
 
-function renderEmpty(msg) {
-  container.innerHTML = `<div class="empty-state">${esc(msg)}</div>`;
+function zoomRenderEmpty(msg) {
+  zoomContainer.innerHTML = `<div class="empty-state">${esc(msg)}</div>`;
   meetingInfo.textContent = '';
   recordingWarning.classList.remove('visible');
   joinSections.classList.remove('hidden');
   meetingActiveCard.classList.add('hidden');
+  meetingSettingsSection.classList.add('hidden');
 }
 
 function participantFlags(p) {
@@ -332,55 +325,64 @@ async function requestRecordingPermission() {
   }
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function esc(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-// ── WebSocket (triggers re-fetch on state change) ────────────────────────────
-
-function connectWebSocket() {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${proto}//${location.host}/ws`);
-
-  ws.onopen = () => {
-    errorBanner.classList.remove('visible');
-  };
-
-  ws.onmessage = () => {
-    // Any state change from server → re-fetch zoom data
-    fetchZoomData();
-  };
-
-  ws.onclose = () => {
-    ws = null;
-    setTimeout(connectWebSocket, 2000);
-  };
-
-  ws.onerror = () => {};
-}
-
-// ── Polling Fallback ─────────────────────────────────────────────────────────
-
-function startPolling() {
-  if (!pollTimer) {
-    pollTimer = setInterval(fetchZoomData, 3000);
-  }
-}
-
 // ── Deferred Render Flush ─────────────────────────────────────────────────────
 // When a dropdown closes without making a selection, flush any pending render.
 document.addEventListener('focusout', (e) => {
   if (e.target && e.target.classList.contains('source-select') && renderPending) {
     // Small delay to let change event fire first if user made a selection
-    setTimeout(() => { if (renderPending && !assignInFlight) render(); }, 100);
+    setTimeout(() => { if (renderPending && !assignInFlight) zoomRender(); }, 100);
   }
 });
+
+// ── Meeting Actions ──────────────────────────────────────────────────────────
+
+let meetingActionTimeout = null;
+const settingsToggle = document.getElementById('settings-toggle');
+const settingsBody   = document.getElementById('settings-body');
+
+function toggleMeetingSettings() {
+  const collapsed = settingsToggle.classList.toggle('collapsed');
+  settingsBody.classList.toggle('collapsed', collapsed);
+  localStorage.setItem('meetingSettingsExpanded', collapsed ? '' : '1');
+}
+
+// Restore expanded state (default is collapsed)
+if (localStorage.getItem('meetingSettingsExpanded') === '1') {
+  settingsToggle.classList.remove('collapsed');
+  settingsBody.classList.remove('collapsed');
+}
+
+async function meetingAction(e, command) {
+  // Find the button that was clicked and disable it briefly
+  const btn = e && e.target;
+  if (btn) btn.disabled = true;
+  meetingActionFeedback.textContent = `Sending: ${command}…`;
+  meetingActionFeedback.className = 'settings-feedback';
+
+  try {
+    const res = await fetch('/api/zoom/meetingaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    meetingActionFeedback.textContent = `${command} sent`;
+    meetingActionFeedback.className = 'settings-feedback ok';
+  } catch (e) {
+    meetingActionFeedback.textContent = `Failed: ${e.message}`;
+    meetingActionFeedback.className = 'settings-feedback error';
+    console.error('Meeting action failed:', command, e);
+  } finally {
+    if (btn) btn.disabled = false;
+    clearTimeout(meetingActionTimeout);
+    meetingActionTimeout = setTimeout(() => {
+      meetingActionFeedback.textContent = '';
+      meetingActionFeedback.className = 'settings-feedback';
+    }, 4000);
+  }
+}
 
 // ── Zoom Field Persistence ────────────────────────────────────────────────────
 
@@ -401,9 +403,3 @@ zoomFields.forEach(({ el, key }) => {
 zoomFields.forEach(({ el, key }) => {
   el.addEventListener('input', () => localStorage.setItem(key, el.value));
 });
-
-// ── Init ─────────────────────────────────────────────────────────────────────
-
-fetchZoomData();
-startPolling();
-connectWebSocket();

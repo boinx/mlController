@@ -6,7 +6,7 @@ import CryptoKit
 
 struct StatusSnapshot {
     var running: Bool = false
-    var openDocuments: [[String: String]] = []
+    var openDocuments: [[String: Any]] = []
     var localDocuments: [String] = []
     var passwordEnabled: Bool = false
     var passwordHash: String = ""
@@ -43,6 +43,8 @@ final class WebServer: @unchecked Sendable {
     var onOpenDocument: ((String) -> Void)?
     /// Called with the selected app path, or nil to reset to system default
     var onSelectVersion: ((String?) -> Void)?
+    /// Called when state changes externally (e.g. output destination toggled) and AppState should refresh
+    var onRefreshNeeded: (() -> Void)?
 
     init(port: UInt16 = 8990) {
         self.port = port
@@ -94,8 +96,8 @@ final class WebServer: @unchecked Sendable {
         // Static assets
         server.GET["/"] = serveFile("index", ext: "html", mimeType: "text/html; charset=utf-8")
         server.GET["/app.js"] = serveFile("app", ext: "js", mimeType: "application/javascript")
-        server.GET["/zoom.html"] = serveFile("zoom", ext: "html", mimeType: "text/html; charset=utf-8")
         server.GET["/zoom.js"] = serveFile("zoom", ext: "js", mimeType: "application/javascript")
+        server.GET["/tabs.js"] = serveFile("tabs", ext: "js", mimeType: "application/javascript")
 
         // WebSocket for live status push
         server.GET["/ws"] = websocket(
@@ -131,6 +133,9 @@ final class WebServer: @unchecked Sendable {
         server.POST["/api/zoom/assign"] = handleZoomAssign
         server.POST["/api/zoom/request-recording"] = handleZoomRequestRecording
         server.POST["/api/zoom/leave"] = handleZoomLeave
+        server.POST["/api/zoom/meetingaction"] = handleZoomMeetingAction
+        server.POST["/api/output-destination/toggle"] = handleOutputDestinationToggle
+        server.POST["/api/show/toggle"] = handleShowToggle
     }
 
     // MARK: - Static File Serving (reads from Bundle.module)
@@ -143,7 +148,7 @@ final class WebServer: @unchecked Sendable {
                   let content = String(data: data, encoding: .utf8) else {
                 return .notFound
             }
-            return .raw(200, "OK", ["Content-Type": mimeType]) { writer in
+            return .raw(200, "OK", ["Content-Type": mimeType, "Cache-Control": "no-cache"]) { writer in
                 try writer.write([UInt8](content.utf8))
             }
         }
@@ -469,6 +474,99 @@ final class WebServer: @unchecked Sendable {
                 return jsonResponse(["error": "Failed to parse response"])
             }
             return jsonResponse(json)
+        }
+    }
+
+    /// Execute a Zoom meeting action command via mimoLive API.
+    private var handleZoomMeetingAction: ((HttpRequest) -> HttpResponse) {
+        return { [weak self] request in
+            guard let self = self else { return .internalServerError }
+            let bodyData = Data(request.body)
+            guard let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
+                  let command = json["command"] as? String, !command.isEmpty else {
+                return .badRequest(.text("Missing or empty 'command' field"))
+            }
+            var urlString = "http://localhost:8989/api/v1/zoom/meetingaction?command=\(command)"
+            if let userId = json["userId"] as? Int {
+                urlString += "&userid=\(userId)"
+            }
+            guard let url = URL(string: urlString) else {
+                return jsonResponse(["error": "Bad URL"])
+            }
+            let (data, error) = self.syncGET(url)
+            if let error = error { return jsonResponse(["error": error]) }
+            guard let data = data,
+                  let respJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                return jsonResponse(["error": "Failed to parse response"])
+            }
+            return jsonResponse(respJson)
+        }
+    }
+
+    // MARK: - Output Destination Toggle
+
+    /// Toggle an output destination's live state via mimoLive dedicated endpoints.
+    /// Uses GET /api/v1/documents/{docId}/output-destinations/{outputId}/setLive or /setOff.
+    private var handleOutputDestinationToggle: ((HttpRequest) -> HttpResponse) {
+        return { [weak self] request in
+            guard let self = self else { return .internalServerError }
+            let bodyData = Data(request.body)
+            guard let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
+                  let docId = json["docId"] as? String, !docId.isEmpty,
+                  let outputId = json["outputId"] as? String, !outputId.isEmpty,
+                  let action = json["action"] as? String, !action.isEmpty else {
+                return .badRequest(.text("Missing 'docId', 'outputId', or 'action'"))
+            }
+
+            // mimoLive provides dedicated setLive / setOff endpoints for output destinations
+            let endpoint = action == "setLive" ? "setLive" : "setOff"
+            guard let url = URL(string: "http://localhost:8989/api/v1/documents/\(docId)/output-destinations/\(outputId)/\(endpoint)") else {
+                return jsonResponse(["error": "Failed to build URL"])
+            }
+
+            let (data, error) = self.syncGET(url)
+            if let error = error { return jsonResponse(["error": error]) }
+
+            // Trigger AppState refresh so the snapshot (and WebSocket broadcast) updates promptly
+            DispatchQueue.main.async { self.onRefreshNeeded?() }
+
+            if let data = data,
+               let respJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                return jsonResponse(respJson)
+            }
+            return jsonResponse(["status": "ok"])
+        }
+    }
+
+    // MARK: - Show Control (Start/Stop Show)
+
+    /// Start or stop a show via mimoLive dedicated endpoints.
+    /// Uses GET /api/v1/documents/{docId}/setLive or /setOff.
+    private var handleShowToggle: ((HttpRequest) -> HttpResponse) {
+        return { [weak self] request in
+            guard let self = self else { return .internalServerError }
+            let bodyData = Data(request.body)
+            guard let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
+                  let docId = json["docId"] as? String, !docId.isEmpty,
+                  let action = json["action"] as? String, !action.isEmpty else {
+                return .badRequest(.text("Missing 'docId' or 'action'"))
+            }
+
+            let endpoint = action == "setLive" ? "setLive" : "setOff"
+            guard let url = URL(string: "http://localhost:8989/api/v1/documents/\(docId)/\(endpoint)") else {
+                return jsonResponse(["error": "Failed to build URL"])
+            }
+
+            let (data, error) = self.syncGET(url)
+            if let error = error { return jsonResponse(["error": error]) }
+
+            DispatchQueue.main.async { self.onRefreshNeeded?() }
+
+            if let data = data,
+               let respJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                return jsonResponse(respJson)
+            }
+            return jsonResponse(["status": "ok"])
         }
     }
 

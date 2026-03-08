@@ -9,6 +9,9 @@ mlController sits in your menu bar and provides a web-based dashboard (port 8990
 - **Menu Bar Status** — See at a glance whether mimoLive is running, with quick controls to start, stop, or restart it
 - **Web Dashboard** — Browser-based control panel accessible from any device on your network at `http://<your-mac>:8990`
 - **Document Management** — Open mimoLive documents (`.tvshow` / `.mls`) from the dashboard, with a list of local files found in `~/Documents`
+- **Show Control** — Start and stop shows with a single button, with a live-updating timer and tags showing which outputs are tied to the show
+- **Output Destinations** — View and toggle output destinations (recording, streaming, NDI, fullscreen) per document with real-time status
+- **Document Metadata** — See resolution, frame rate, source count, and layer count for each open document at a glance
 - **Zoom Meeting Control** — Join and leave Zoom meetings through mimoLive, assign participants to video sources, and request recording permissions
 - **Real-Time Updates** — WebSocket connection pushes state changes to the browser instantly, with polling as a fallback
 - **Universal Binary** — Runs natively on both Apple Silicon and Intel Macs
@@ -72,8 +75,10 @@ open mlController.xcodeproj
 
 1. **Launch mlController** — it appears as an icon in your menu bar
 2. **Open the dashboard** — click the menu bar icon and select "Open Dashboard", or navigate to `http://localhost:8990` in any browser
-3. **Control mimoLive** — use the dashboard to start/stop mimoLive, open documents, and manage Zoom meetings
-4. **Zoom Panel** — click "Open Zoom Panel" on the dashboard to access Zoom meeting controls including joining meetings, assigning participants to sources, and managing recording permissions
+3. **Control mimoLive** — use the dashboard to start/stop mimoLive, open documents, and manage shows
+4. **Show Control** — start or stop a show directly from the dashboard; the live timer counts up in real time and shows which outputs are affected
+5. **Output Destinations** — expand the Outputs section on any open document to see and toggle recording, streaming, NDI, and fullscreen outputs
+6. **Zoom Panel** — switch to the Zoom tab to access Zoom meeting controls including joining meetings, assigning participants to sources, and managing recording permissions
 
 ### Network Access
 
@@ -125,6 +130,12 @@ The official mimoLive HTTP API is documented at [mimolive.com/user-manual/remote
 - `GET /api/v1/documents/{id}/layers` — List layers
 - `GET|POST /api/v1/.../layers/{id}/toggleLive` — Toggle a layer on/off
 - `PUT /api/v1/.../layers/{id}` — Update layer parameters (e.g. lower third text)
+- `GET /api/v1/documents` — List open documents with metadata
+- `GET /api/v1/documents/<id>/output-destinations` — List output destinations per document
+- `GET /api/v1/documents/<id>/setLive` — Start a show
+- `GET /api/v1/documents/<id>/setOff` — Stop a show
+- `GET /api/v1/documents/<id>/output-destinations/<id>/setLive` — Start an output destination
+- `GET /api/v1/documents/<id>/output-destinations/<id>/setOff` — Stop an output destination
 - `GET /api/v1/zoom/participants` — List Zoom meeting participants
 - `PATCH /api/v1/sources/{id}` — Assign a Zoom participant to a source
 - `ws://localhost:8989/api/v1/socket` — WebSocket for real-time state changes

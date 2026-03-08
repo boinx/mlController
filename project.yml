@@ -31,7 +31,9 @@ targets:
       properties:
         LSUIElement: true
         NSPrincipalClass: NSApplication
+        CFBundleIconFile: AppIcon
         CFBundleDisplayName: mimoLive Controller
+        CFBundleShortVersionString: "1.2"
         NSHumanReadableCopyright: "Copyright © 2025 Boinx Software International GmbH. All rights reserved."
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
@@ -40,7 +42,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.boinx.mlcontroller
         PRODUCT_NAME: mlController
-        MARKETING_VERSION: "1.0.0"
+        MARKETING_VERSION: "1.1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.9"
         MACOSX_DEPLOYMENT_TARGET: "13.0"

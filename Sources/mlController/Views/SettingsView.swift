@@ -1,31 +1,77 @@
 import SwiftUI
 
+enum SettingsPage: String, CaseIterable, Identifiable {
+    case mimoLive = "mimoLive"
+    case web = "Web Dashboard"
+    case about = "About"
+
+    var id: Self { self }
+
+    var icon: String {
+        switch self {
+        case .mimoLive: return "video.circle"
+        case .web:      return "globe"
+        case .about:    return "info.circle"
+        }
+    }
+}
+
 struct SettingsView: View {
 
     @EnvironmentObject var appState: AppState
+    @State private var selection: SettingsPage? = .mimoLive
     @State private var newPassword: String = ""
     @State private var confirmPassword: String = ""
     @State private var showPasswordMismatch = false
     @State private var showSaved = false
+    @State private var portString: String = ""
+    @State private var showPortError = false
+    @State private var showPortSaved = false
 
     var body: some View {
-        TabView {
-            mimoLiveTab
-                .tabItem { Label("mimoLive", systemImage: "video.circle") }
-
-            webTab
-                .tabItem { Label("Web Dashboard", systemImage: "globe") }
-
-            aboutTab
-                .tabItem { Label("About", systemImage: "info.circle") }
+        NavigationSplitView {
+            List(SettingsPage.allCases, selection: $selection) { page in
+                Label(page.rawValue, systemImage: page.icon)
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
+        } detail: {
+            switch selection ?? .mimoLive {
+            case .mimoLive: mimoLiveDetail
+            case .web:      webDetail
+            case .about:    aboutDetail
+            }
         }
-        .frame(width: 480, height: 360)
+        .frame(width: 620, height: 460)
+        .onAppear { portString = String(appState.webServerPort) }
     }
 
-    // MARK: - mimoLive Tab
+    private func applyPort() {
+        guard let port = UInt16(portString), port >= 1024 else {
+            showPortError = true
+            return
+        }
+        showPortError = false
+        appState.changePort(to: port)
+        showPortSaved = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { showPortSaved = false }
+    }
 
-    private var mimoLiveTab: some View {
+    // MARK: - mimoLive
+
+    private var mimoLiveDetail: some View {
         Form {
+            Section {
+                Toggle("Launch at Login", isOn: Binding(
+                    get: { appState.launchAtLogin },
+                    set: { appState.setLaunchAtLogin($0) }
+                ))
+            } header: {
+                Text("Startup")
+            } footer: {
+                Text("Automatically start mlController when you log in.")
+            }
+
             Section {
                 if appState.availableMimoLiveApps.isEmpty {
                     HStack {
@@ -35,7 +81,6 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                     }
                 } else {
-                    // nil = system default (whichever NSWorkspace resolves first)
                     Picker("Version to launch", selection: $appState.selectedMimoLiveURL) {
                         Text("System Default")
                             .tag(Optional<URL>.none)
@@ -57,8 +102,6 @@ struct SettingsView: View {
                 Text("Installation")
             } footer: {
                 Text("Select which version to launch when pressing Start. \"System Default\" uses whichever version macOS considers primary.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
 
             Section {
@@ -70,20 +113,33 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .padding(.vertical, 8)
     }
 
-    // MARK: - Web Tab
+    // MARK: - Web Dashboard
 
-    private var webTab: some View {
+    private var webDetail: some View {
         Form {
             Section {
-                LabeledContent("Port") {
-                    Text("\(appState.webServerPort)")
-                        .foregroundColor(.secondary)
+                HStack {
+                    Text("Port")
+                    Spacer()
+                    TextField("Port", text: $portString)
+                        .frame(width: 80)
+                        .multilineTextAlignment(.trailing)
+                        .onSubmit { applyPort() }
+                    Button("Apply") { applyPort() }
+                        .disabled(portString == String(appState.webServerPort))
+                }
+                if showPortError {
+                    Text("Enter a valid port number (1024\u{2013}65535)")
+                        .foregroundColor(.red).font(.caption)
+                }
+                if showPortSaved {
+                    Label("Port changed \u{2014} server restarted", systemImage: "checkmark.circle.fill")
+                        .foregroundColor(.green).font(.caption)
                 }
                 LabeledContent("URL") {
-                    Link("http://localhost:\(appState.webServerPort)",
+                    Link("http://localhost:\(String(appState.webServerPort))",
                          destination: URL(string: "http://localhost:\(appState.webServerPort)")!)
                 }
             } header: {
@@ -113,10 +169,12 @@ struct SettingsView: View {
                         .disabled(newPassword.isEmpty)
 
                         if showPasswordMismatch {
-                            Text("Passwords don't match").foregroundColor(.red).font(.caption)
+                            Text("Passwords don't match")
+                                .foregroundColor(.red).font(.caption)
                         }
                         if showSaved {
-                            Label("Saved", systemImage: "checkmark.circle.fill").foregroundColor(.green).font(.caption)
+                            Label("Saved", systemImage: "checkmark.circle.fill")
+                                .foregroundColor(.green).font(.caption)
                         }
                     }
 
@@ -129,59 +187,55 @@ struct SettingsView: View {
                 Text("Authentication")
             } footer: {
                 Text("Clients must supply the password via HTTP Basic Auth or the X-mlcontroller-password header.")
-                    .font(.caption).foregroundColor(.secondary)
             }
         }
         .formStyle(.grouped)
-        .padding(.vertical, 8)
     }
 
-    // MARK: - About Tab
+    // MARK: - About
 
-    private var aboutTab: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "video.circle.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.accentColor)
+    private var aboutDetail: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 96, height: 96)
 
             VStack(spacing: 4) {
                 Text("mlController")
-                    .font(.title2.bold())
-                Text("Version 1.0.0")
+                    .font(.title.bold())
+                Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")")
                     .foregroundColor(.secondary)
-                    .font(.subheadline)
             }
 
             Divider()
+                .frame(width: 200)
 
-            VStack(alignment: .leading, spacing: 8) {
-                InfoRow(label: "Installations found",
-                        value: "\(appState.availableMimoLiveApps.count)")
-                InfoRow(label: "Active version",
-                        value: appState.selectedMimoLiveURL?.deletingPathExtension().lastPathComponent ?? "System Default")
-                InfoRow(label: "mlController Port",
-                        value: "\(appState.webServerPort)")
+            Grid(alignment: .leading, verticalSpacing: 6) {
+                GridRow {
+                    Text("Installations found")
+                        .foregroundColor(.secondary)
+                        .gridColumnAlignment(.trailing)
+                    Text(String(appState.availableMimoLiveApps.count))
+                        .font(.body.monospaced())
+                }
+                GridRow {
+                    Text("Active version")
+                        .foregroundColor(.secondary)
+                    Text(appState.selectedMimoLiveURL?.deletingPathExtension().lastPathComponent ?? "System Default")
+                        .font(.body.monospaced())
+                }
+                GridRow {
+                    Text("Web server port")
+                        .foregroundColor(.secondary)
+                    Text(String(appState.webServerPort))
+                        .font(.body.monospaced())
+                }
             }
-            .padding(.horizontal)
 
             Spacer()
         }
-        .padding()
-    }
-}
-
-private struct InfoRow: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack {
-            Text(label)
-                .foregroundColor(.secondary)
-                .font(.caption)
-                .frame(width: 160, alignment: .trailing)
-            Text(value)
-                .font(.caption.monospaced())
-        }
+        .frame(maxWidth: .infinity)
     }
 }

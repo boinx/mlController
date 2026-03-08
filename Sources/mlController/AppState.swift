@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import AppKit
 import SwiftUI
+import ServiceManagement
 
 @MainActor
 final class AppState: ObservableObject {
@@ -13,7 +14,11 @@ final class AppState: ObservableObject {
     @Published var isMimoLiveRunning: Bool = false
     @Published var openDocuments: [MimoDocument] = []
     @Published var localDocuments: [URL] = []
-    @Published var webServerPort: UInt16 = 8990
+    @Published var webServerPort: UInt16 = 8990 {
+        didSet {
+            UserDefaults.standard.set(Int(webServerPort), forKey: "webServerPort")
+        }
+    }
 
     /// All mimoLive installations found on this machine
     @Published var availableMimoLiveApps: [MimoLiveApp] = []
@@ -45,6 +50,24 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// Whether the app is registered to launch at login (reads live from SMAppService)
+    var launchAtLogin: Bool {
+        SMAppService.mainApp.status == .enabled
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        objectWillChange.send()
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            print("[mlController] Failed to \(enabled ? "enable" : "disable") launch at login: \(error)")
+        }
+    }
+
     // MARK: - Services
 
     private let monitor = MimoLiveMonitor()
@@ -60,6 +83,10 @@ final class AppState: ObservableObject {
     private var pollingTask: Task<Void, Never>?
 
     init() {
+        let savedPort = UserDefaults.standard.integer(forKey: "webServerPort")
+        if savedPort > 0 && savedPort <= UInt16.max {
+            webServerPort = UInt16(savedPort)
+        }
         passwordEnabled = UserDefaults.standard.bool(forKey: "passwordEnabled")
         webPassword = UserDefaults.standard.string(forKey: "webPassword") ?? ""
     }
@@ -111,8 +138,21 @@ final class AppState: ObservableObject {
                 self.selectedMimoLiveURL = nil
             }
         }
+        server.onRefreshNeeded = { [weak self] in
+            Task { await self?.refresh() }
+        }
         server.start()
         self.webServer = server
+        pushSnapshotToServer()
+    }
+
+    func changePort(to newPort: UInt16) {
+        guard newPort != webServerPort else { return }
+        webServer?.stop()
+        webServer = nil
+        webServerPort = newPort
+        startWebServer()
+        loadDocIcon()
         pushSnapshotToServer()
     }
 
@@ -123,7 +163,35 @@ final class AppState: ObservableObject {
         }
         let snap = StatusSnapshot(
             running: isMimoLiveRunning,
-            openDocuments: openDocuments.map { ["id": $0.id, "name": $0.displayName, "path": $0.filePath] },
+            openDocuments: openDocuments.map { doc -> [String: Any] in
+                var d: [String: Any] = [
+                    "id": doc.id,
+                    "name": doc.displayName,
+                    "path": doc.filePath,
+                    "liveState": doc.liveState,
+                    "resolution": doc.resolution,
+                    "framerate": doc.framerate,
+                    "duration": doc.duration,
+                    "formattedDuration": doc.formattedDuration,
+                    "sourceCount": doc.sourceCount,
+                    "layerCount": doc.layerCount,
+                ]
+                if let showStart = doc.showStart { d["showStart"] = showStart }
+                d["outputs"] = doc.outputs.map { ["type": $0.type, "liveState": $0.liveState] }
+                d["outputDestinations"] = doc.outputDestinations.map { dest -> [String: Any] in
+                    [
+                        "id": dest.id,
+                        "title": dest.title,
+                        "type": dest.type,
+                        "summary": dest.summary,
+                        "liveState": dest.liveState,
+                        "readyToGoLive": dest.readyToGoLive,
+                        "startsWithShow": dest.startsWithShow,
+                        "stopsWithShow": dest.stopsWithShow,
+                    ]
+                }
+                return d
+            },
             localDocuments: localDocuments.map { $0.path },
             passwordEnabled: passwordEnabled,
             passwordHash: passwordEnabled ? server.sha256(webPassword) : "",
@@ -219,7 +287,7 @@ final class AppState: ObservableObject {
             let window = NSWindow(contentViewController: hosting)
             window.title = "mlController Settings"
             window.styleMask = [.titled, .closable, .miniaturizable]
-            window.setContentSize(NSSize(width: 480, height: 360))
+            window.setContentSize(NSSize(width: 620, height: 460))
             window.center()
             window.isReleasedWhenClosed = false
             settingsWindowController = NSWindowController(window: window)
