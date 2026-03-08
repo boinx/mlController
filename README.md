@@ -100,15 +100,34 @@ mlController is built with Swift and SwiftUI, using a lightweight embedded HTTP 
 - **`MimoLiveWebSocket`** — Subscribes to mimoLive state changes and pushes updates to connected browsers
 - **`MimoLiveController`** — Starts, stops, and restarts mimoLive via NSWorkspace
 
-## mimoLive HTTP API
+## mimoLive API Reference
 
-mlController uses the mimoLive HTTP API documented at [mimolive.com/user-manual/remote-control-automation/http-api](https://mimolive.com/user-manual/remote-control-automation/http-api/). Key endpoints used:
+This repository includes a comprehensive [mimoLive API reference](docs/mimoLive-API.md) covering the full HTTP API (port 8989) and the mlController proxy API (port 8990). It documents every endpoint, response format, WebSocket protocol, Zoom meeting control, and common recipes with working examples.
+
+The reference is designed to be used with AI coding assistants like [Claude](https://claude.ai) — drop `docs/mimoLive-API.md` into your project or conversation context and Claude will know exactly how to write correct mimoLive API calls.
+
+### Using with Claude Code
+
+If you're using [Claude Code](https://docs.anthropic.com/en/docs/claude-code), the included `/mimolive` slash command loads the full API reference automatically:
+
+```
+/mimolive help me toggle the lower third layer on and off
+```
+
+To use the API reference in your own project, copy `docs/mimoLive-API.md` into your project's `.claude/` directory or reference it in your `CLAUDE.md`.
+
+### Key Endpoints
+
+The official mimoLive HTTP API is documented at [mimolive.com/user-manual/remote-control-automation/http-api](https://mimolive.com/user-manual/remote-control-automation/http-api/). Some key endpoints:
 
 - `GET /api/v1/documents` — List open documents
+- `GET|POST /api/v1/documents/{id}/toggleLive` — Start/stop a show
+- `GET /api/v1/documents/{id}/layers` — List layers
+- `GET|POST /api/v1/.../layers/{id}/toggleLive` — Toggle a layer on/off
+- `PUT /api/v1/.../layers/{id}` — Update layer parameters (e.g. lower third text)
 - `GET /api/v1/zoom/participants` — List Zoom meeting participants
-- `PATCH /api/v1/sources/<id>` — Assign a Zoom participant to a source
-- `GET /api/v1/zoom/leave` — Leave the current Zoom meeting
-- `GET /api/v1/zoom/meetingaction?command=requestRecordingPermission` — Request recording permission from the Zoom host
+- `PATCH /api/v1/sources/{id}` — Assign a Zoom participant to a source
+- `ws://localhost:8989/api/v1/socket` — WebSocket for real-time state changes
 
 ## Community
 
