@@ -33,7 +33,7 @@ targets:
         NSPrincipalClass: NSApplication
         CFBundleIconFile: AppIcon
         CFBundleDisplayName: mimoLive Controller
-        CFBundleShortVersionString: "1.1"
+        CFBundleShortVersionString: "1.2"
         NSHumanReadableCopyright: "Copyright © 2025 Boinx Software International GmbH. All rights reserved."
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
