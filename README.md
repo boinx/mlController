@@ -107,9 +107,9 @@ mlController is built with Swift and SwiftUI, using a lightweight embedded HTTP 
 
 ## mimoLive API Reference
 
-This repository includes a comprehensive [mimoLive API reference](docs/mimoLive-API.md) covering the full HTTP API (port 8989) and the mlController proxy API (port 8990). It documents every endpoint, response format, WebSocket protocol, Zoom meeting control, and common recipes with working examples.
+The [mimoLive API Reference](https://github.com/boinx/mimoLive-API-Reference) is a comprehensive guide covering the full HTTP API (port 8989) and the mlController proxy API (port 8990). It documents every endpoint, response format, WebSocket protocol, Zoom meeting control, and common recipes with working examples.
 
-The reference is designed to be used with AI coding assistants like [Claude](https://claude.ai) — drop `docs/mimoLive-API.md` into your project or conversation context and Claude will know exactly how to write correct mimoLive API calls.
+The reference is designed to be used with AI coding assistants like [Claude](https://claude.ai) — drop [`mimoLive-API.md`](https://github.com/boinx/mimoLive-API-Reference/blob/main/mimoLive-API.md) into your project or conversation context and Claude will know exactly how to write correct mimoLive API calls.
 
 ### Using with Claude Code
 
@@ -119,7 +119,7 @@ If you're using [Claude Code](https://docs.anthropic.com/en/docs/claude-code), t
 /mimolive help me toggle the lower third layer on and off
 ```
 
-To use the API reference in your own project, copy `docs/mimoLive-API.md` into your project's `.claude/` directory or reference it in your `CLAUDE.md`.
+To use the API reference in your own project, copy [`mimoLive-API.md`](https://raw.githubusercontent.com/boinx/mimoLive-API-Reference/main/mimoLive-API.md) into your project's `.claude/` directory or reference it in your `CLAUDE.md`.
 
 ### Key Endpoints
 
