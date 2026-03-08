@@ -20,6 +20,8 @@ const btnJoinDemo        = document.getElementById('btn-join-demo');
 const joinDemoSub        = document.getElementById('join-demo-sub');
 const btnJoinCustom      = document.getElementById('btn-join-custom');
 const joinCustomSub      = document.getElementById('join-custom-sub');
+const meetingSettingsSection = document.getElementById('meeting-settings-section');
+const meetingActionFeedback  = document.getElementById('meeting-action-feedback');
 const zoomMeetingId      = document.getElementById('zoom-meeting-id');
 const zoomPasscode       = document.getElementById('zoom-passcode');
 const zoomDisplayName    = document.getElementById('zoom-display-name');
@@ -36,13 +38,6 @@ async function fetchZoomData() {
     if (!srcRes.ok || !partRes.ok) throw new Error('API error');
     const srcData  = await srcRes.json();
     const partData = await partRes.json();
-
-    if (srcData.error && !srcData.sources?.length) {
-      currentSources = [];
-      currentParticipants = [];
-      zoomRenderEmpty(srcData.error);
-      return;
-    }
 
     currentSources = srcData.sources || [];
     currentParticipants = (partData.participants || [])
@@ -76,6 +71,7 @@ function zoomRender() {
   const inMeeting = currentParticipants.length > 0;
   joinSections.classList.toggle('hidden', inMeeting);
   meetingActiveCard.classList.toggle('hidden', !inMeeting);
+  meetingSettingsSection.classList.toggle('hidden', !inMeeting);
   if (inMeeting) {
     const host = currentParticipants.find(p => p.userRole === 'Host');
     const count = currentParticipants.length;
@@ -86,7 +82,8 @@ function zoomRender() {
   }
 
   if (currentSources.length === 0) {
-    zoomRenderEmpty('No Zoom sources in the current document');
+    zoomContainer.innerHTML = `<div class="empty-state">${esc('No Zoom sources in the current document')}</div>`;
+    meetingInfo.textContent = '';
     recordingWarning.classList.remove('visible');
     return;
   }
@@ -161,6 +158,7 @@ function zoomRenderEmpty(msg) {
   recordingWarning.classList.remove('visible');
   joinSections.classList.remove('hidden');
   meetingActiveCard.classList.add('hidden');
+  meetingSettingsSection.classList.add('hidden');
 }
 
 function participantFlags(p) {
@@ -335,6 +333,56 @@ document.addEventListener('focusout', (e) => {
     setTimeout(() => { if (renderPending && !assignInFlight) zoomRender(); }, 100);
   }
 });
+
+// ── Meeting Actions ──────────────────────────────────────────────────────────
+
+let meetingActionTimeout = null;
+const settingsToggle = document.getElementById('settings-toggle');
+const settingsBody   = document.getElementById('settings-body');
+
+function toggleMeetingSettings() {
+  const collapsed = settingsToggle.classList.toggle('collapsed');
+  settingsBody.classList.toggle('collapsed', collapsed);
+  localStorage.setItem('meetingSettingsExpanded', collapsed ? '' : '1');
+}
+
+// Restore expanded state (default is collapsed)
+if (localStorage.getItem('meetingSettingsExpanded') === '1') {
+  settingsToggle.classList.remove('collapsed');
+  settingsBody.classList.remove('collapsed');
+}
+
+async function meetingAction(e, command) {
+  // Find the button that was clicked and disable it briefly
+  const btn = e && e.target;
+  if (btn) btn.disabled = true;
+  meetingActionFeedback.textContent = `Sending: ${command}…`;
+  meetingActionFeedback.className = 'settings-feedback';
+
+  try {
+    const res = await fetch('/api/zoom/meetingaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    meetingActionFeedback.textContent = `${command} sent`;
+    meetingActionFeedback.className = 'settings-feedback ok';
+  } catch (e) {
+    meetingActionFeedback.textContent = `Failed: ${e.message}`;
+    meetingActionFeedback.className = 'settings-feedback error';
+    console.error('Meeting action failed:', command, e);
+  } finally {
+    if (btn) btn.disabled = false;
+    clearTimeout(meetingActionTimeout);
+    meetingActionTimeout = setTimeout(() => {
+      meetingActionFeedback.textContent = '';
+      meetingActionFeedback.className = 'settings-feedback';
+    }, 4000);
+  }
+}
 
 // ── Zoom Field Persistence ────────────────────────────────────────────────────
 

@@ -81,11 +81,10 @@ final class MimoLiveWebSocket: @unchecked Sendable {
             return
         }
 
-        // Trigger refresh on document-level lifecycle events.
-        // Format 1: {"type":"documents","event":"added"|"removed"} — explicit doc event
-        // Format 2: {"event":"added"|"removed",...} with a document relationship — structural change
+        // Trigger refresh on any meaningful state change from mimoLive.
+        // Events: "added", "removed", "changed" — covers doc lifecycle and live-state changes.
         if let event = json["event"] as? String,
-           event == "added" || event == "removed" {
+           event == "added" || event == "removed" || event == "changed" {
             onChange?()
         }
     }

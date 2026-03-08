@@ -138,6 +138,9 @@ final class AppState: ObservableObject {
                 self.selectedMimoLiveURL = nil
             }
         }
+        server.onRefreshNeeded = { [weak self] in
+            Task { await self?.refresh() }
+        }
         server.start()
         self.webServer = server
         pushSnapshotToServer()
@@ -160,7 +163,35 @@ final class AppState: ObservableObject {
         }
         let snap = StatusSnapshot(
             running: isMimoLiveRunning,
-            openDocuments: openDocuments.map { ["id": $0.id, "name": $0.displayName, "path": $0.filePath] },
+            openDocuments: openDocuments.map { doc -> [String: Any] in
+                var d: [String: Any] = [
+                    "id": doc.id,
+                    "name": doc.displayName,
+                    "path": doc.filePath,
+                    "liveState": doc.liveState,
+                    "resolution": doc.resolution,
+                    "framerate": doc.framerate,
+                    "duration": doc.duration,
+                    "formattedDuration": doc.formattedDuration,
+                    "sourceCount": doc.sourceCount,
+                    "layerCount": doc.layerCount,
+                ]
+                if let showStart = doc.showStart { d["showStart"] = showStart }
+                d["outputs"] = doc.outputs.map { ["type": $0.type, "liveState": $0.liveState] }
+                d["outputDestinations"] = doc.outputDestinations.map { dest -> [String: Any] in
+                    [
+                        "id": dest.id,
+                        "title": dest.title,
+                        "type": dest.type,
+                        "summary": dest.summary,
+                        "liveState": dest.liveState,
+                        "readyToGoLive": dest.readyToGoLive,
+                        "startsWithShow": dest.startsWithShow,
+                        "stopsWithShow": dest.stopsWithShow,
+                    ]
+                }
+                return d
+            },
             localDocuments: localDocuments.map { $0.path },
             passwordEnabled: passwordEnabled,
             passwordHash: passwordEnabled ? server.sha256(webPassword) : "",

@@ -333,7 +333,171 @@
   }
 
   .badge-open   { background: rgba(76,175,125,0.18); color: var(--green); }
+  .badge-live   { background: rgba(239,83,80,0.22); color: #ef5350; animation: pulse-live 2s ease-in-out infinite; }
   .badge-avail  { background: rgba(92,142,230,0.18); color: var(--blue); }
+
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  /* ── Document Metadata ──────────────────── */
+  .doc-item-open {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .doc-item-open:last-child { border-bottom: none; }
+  .doc-item-open:hover { background: var(--surface2); }
+  .doc-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .doc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    padding: 6px 0 2px 28px;
+    font-size: 0.72rem;
+    color: var(--subtext);
+  }
+  .doc-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .doc-meta-item .meta-icon {
+    opacity: 0.6;
+  }
+  .doc-outputs {
+    display: flex;
+    gap: 6px;
+    padding: 5px 0 0 28px;
+  }
+  .output-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-transform: capitalize;
+  }
+  .output-off  { background: var(--surface2); color: var(--subtext); }
+  .output-live { background: rgba(239,83,80,0.22); color: #ef5350; }
+
+  /* ── Output Destinations (collapsible) ──── */
+  .output-destinations {
+    padding: 8px 0 4px 28px;
+  }
+  .output-dest-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 4px 0;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--subtext);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .output-dest-toggle:hover { color: var(--text); }
+  .output-dest-toggle:active { transform: none; }
+  .output-dest-toggle .chevron {
+    font-size: 0.6rem;
+    transition: transform 0.2s;
+  }
+  .output-dest-toggle.collapsed .chevron { transform: rotate(-90deg); }
+
+  .output-dest-list {
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+    overflow: hidden;
+  }
+  .output-dest-list.collapsed {
+    max-height: 0 !important;
+    opacity: 0;
+  }
+
+  .output-dest-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 0;
+  }
+  .output-dest-item:first-child { border-radius: 6px 6px 0 0; }
+  .output-dest-item:last-child { border-bottom: none; border-radius: 0 0 6px 6px; }
+  .output-dest-item:only-child { border-radius: 6px; }
+
+  .output-dest-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .output-dest-title {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.82rem;
+  }
+  .output-dest-summary {
+    font-size: 0.7rem;
+    color: var(--subtext);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+  }
+  .output-dest-flags {
+    display: flex;
+    gap: 6px;
+    margin-top: 3px;
+  }
+  .output-dest-flag {
+    font-size: 0.62rem;
+    color: var(--subtext);
+    background: var(--surface2);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .btn-toggle-output {
+    padding: 4px 12px;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    flex-shrink: 0;
+    min-width: 60px;
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    transition: opacity 0.15s;
+  }
+  .btn-toggle-output.is-live {
+    background: rgba(239,83,80,0.22);
+    color: #ef5350;
+    border-color: rgba(239,83,80,0.3);
+  }
+  .btn-toggle-output.is-preview {
+    background: rgba(76,175,125,0.18);
+    color: var(--green);
+    border-color: rgba(76,175,125,0.3);
+  }
+  .btn-toggle-output.is-off {
+    background: var(--surface2);
+    color: var(--subtext);
+  }
+  .btn-toggle-output:hover { opacity: 0.85; }
+  .btn-toggle-output:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .btn-open {
     padding: 4px 10px;
@@ -546,6 +710,95 @@
     padding: 6px 0 0;
   }
 
+  /* ── Meeting Settings ────────────────────── */
+  .meeting-settings {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .settings-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    margin-bottom: 10px;
+    cursor: pointer;
+    font-family: var(--font);
+  }
+  .settings-toggle:active { transform: none; }
+  .settings-toggle .chevron {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+  }
+  .settings-toggle.collapsed .chevron { transform: rotate(-90deg); }
+  .settings-toggle.collapsed { margin-bottom: 0; }
+  .settings-body {
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+    overflow: hidden;
+  }
+  .settings-body.collapsed {
+    max-height: 0 !important;
+    opacity: 0;
+  }
+  .settings-group {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-group:last-child { border-bottom: none; }
+  .settings-group-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .settings-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+  }
+  .settings-label {
+    flex: 1;
+    font-size: 0.84rem;
+    color: var(--text);
+  }
+  .btn-pair {
+    display: flex;
+    gap: 4px;
+  }
+  .btn-action {
+    min-width: 88px;
+    padding: 5px 14px;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-align: center;
+    justify-content: center;
+  }
+  .btn-action:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-action.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .settings-feedback {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    min-height: 1.2em;
+    margin-top: 4px;
+    transition: color 0.2s;
+  }
+  .settings-feedback.error { color: var(--red); }
+  .settings-feedback.ok { color: var(--green); }
+
   /* ── Utilities ──────────────────────────── */
   .hidden { display: none !important; }
 
@@ -707,6 +960,124 @@
         <button class="btn-warning" id="btn-request-recording" onclick="requestRecordingPermission()">Request Permission</button>
         <span class="warning-status" id="recording-request-status"></span>
       </div>
+    </div>
+
+    <!-- Meeting Settings (visible only when in meeting) -->
+    <div class="hidden" id="meeting-settings-section">
+      <button class="section-label settings-toggle collapsed" id="settings-toggle" onclick="toggleMeetingSettings()">
+        <span class="chevron">&#9660;</span> Meeting Settings
+      </button>
+      <div class="meeting-settings settings-body collapsed" id="settings-body">
+
+        <div class="settings-group">
+          <div class="settings-group-title">Audio</div>
+          <div class="settings-row">
+            <span class="settings-label">All Participants</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'muteAll')">Mute All</button>
+              <button class="btn-action" onclick="meetingAction(event,'unmuteAll')">Unmute All</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Allow Unmute by Self</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'enableUnmuteBySelf')">Enable</button>
+              <button class="btn-action" onclick="meetingAction(event,'disableUnmuteBySelf')">Disable</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Audio to Zoom</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'joinVoip')">Join</button>
+              <button class="btn-action" onclick="meetingAction(event,'leaveVoip')">Leave</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Video</div>
+          <div class="settings-row">
+            <span class="settings-label">Allow Participants to Start Video</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'allowParticipantsToStartVideo')">Allow</button>
+              <button class="btn-action" onclick="meetingAction(event,'disallowParticipantsToStartVideo')">Disallow</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Profile Pictures</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'showParticipantProfilePictures')">Show</button>
+              <button class="btn-action" onclick="meetingAction(event,'hideParticipantProfilePictures')">Hide</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Sharing &amp; Chat</div>
+          <div class="settings-row">
+            <span class="settings-label">Allow Chat</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'allowParticipantsToChat')">Allow</button>
+              <button class="btn-action" onclick="meetingAction(event,'disallowParticipantsToChat')">Disallow</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Allow Screen Sharing</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'allowParticipantsToShare')">Allow</button>
+              <button class="btn-action" onclick="meetingAction(event,'disallowParticipantsToShare')">Disallow</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Allow Whiteboard Sharing</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'allowParticipantsToShareWhiteBoard')">Allow</button>
+              <button class="btn-action" onclick="meetingAction(event,'disallowParticipantsToShareWhiteBoard')">Disallow</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Share Window Mode</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'shareFitWindowMode')">Fit Window</button>
+              <button class="btn-action" onclick="meetingAction(event,'pauseShare')">Pause</button>
+              <button class="btn-action" onclick="meetingAction(event,'resumeShare')">Resume</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Meeting Controls</div>
+          <div class="settings-row">
+            <span class="settings-label">Lock Meeting</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'lockMeeting')">Lock</button>
+              <button class="btn-action" onclick="meetingAction(event,'unlockMeeting')">Unlock</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Allow Rename</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'allowParticipantsToRename')">Allow</button>
+              <button class="btn-action" onclick="meetingAction(event,'disallowParticipantsToRename')">Disallow</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Raised Hands</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'lowerAllHands')">Lower All</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Auto-Allow Recording Requests</span>
+            <div class="btn-pair">
+              <button class="btn-action" onclick="meetingAction(event,'enableAutoAllowLocalRecordingRequest')">Enable</button>
+              <button class="btn-action" onclick="meetingAction(event,'disableAutoAllowLocalRecordingRequest')">Disable</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="settings-feedback" id="meeting-action-feedback"></div>
     </div>
 
     <!-- Source Assignment -->
