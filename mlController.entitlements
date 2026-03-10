@@ -14,5 +14,9 @@
          to mimoLive; required for Hardened Runtime apps that send Apple Events to other apps -->
     <key>com.apple.security.automation.apple-events</key>
     <true/>
+
+    <!-- Allow loading Sparkle.framework (signed with a different Team ID in dev builds) -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
 </dict>
 </plist>

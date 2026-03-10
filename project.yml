@@ -11,6 +11,9 @@ packages:
   Swifter:
     url: https://github.com/httpswift/swifter.git
     minorVersion: "1.5.0"
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    minorVersion: "2.9.0"
 
 targets:
   mlController:
@@ -37,6 +40,9 @@ targets:
         NSHumanReadableCopyright: "Copyright © 2025 Boinx Software International GmbH. All rights reserved."
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        SUFeedURL: "https://raw.githubusercontent.com/boinx/mlController/main/appcast.xml"
+        SUPublicEDKey: ""
+        SUEnableAutomaticChecks: true
 
     settings:
       base:
@@ -50,6 +56,7 @@ targets:
         DEVELOPMENT_TEAM: 6372P8EH2J
         # Enable Hardened Runtime (required for notarization)
         ENABLE_HARDENED_RUNTIME: YES
+        LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
         CODE_SIGN_ENTITLEMENTS: mlController.entitlements
         INFOPLIST_KEY_CFBundleDisplayName: mimoLive Controller
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
@@ -57,3 +64,6 @@ targets:
     dependencies:
       - package: Swifter
         product: Swifter
+      - package: Sparkle
+        product: Sparkle
+        embed: true

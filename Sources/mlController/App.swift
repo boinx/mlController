@@ -6,6 +6,7 @@ import AppKit
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         Task { await AppState.shared.start() }
+        UpdaterService.shared.start()
     }
 }
 
@@ -16,11 +17,13 @@ struct mlControllerApp: App {
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var appState = AppState.shared
+    @StateObject private var updaterService = UpdaterService.shared
 
     var body: some Scene {
         MenuBarExtra {
             MenuBarView()
                 .environmentObject(appState)
+                .environmentObject(updaterService)
         } label: {
             Label {
                 Text("mlController")

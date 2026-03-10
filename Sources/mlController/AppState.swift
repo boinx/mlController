@@ -95,15 +95,6 @@ final class AppState: ObservableObject {
         guard !isStarted else { return }
         isStarted = true
 
-        // Discover mimoLive installations and restore saved selection
-        availableMimoLiveApps = MimoLiveApp.findAll()
-        if let savedPath = UserDefaults.standard.string(forKey: "selectedMimoLiveURL") {
-            let savedURL = URL(fileURLWithPath: savedPath)
-            if availableMimoLiveApps.contains(where: { $0.url.standardizedFileURL == savedURL.standardizedFileURL }) {
-                selectedMimoLiveURL = savedURL
-            }
-        }
-
         // WebSocket triggers instant refresh on document open/close.
         // Short delay lets mimoLive's REST API catch up to its WebSocket events.
         mimoWebSocket.onChange = { [weak self] in
@@ -114,10 +105,20 @@ final class AppState: ObservableObject {
             }
         }
 
+        // Start web server first so the app is responsive immediately
         startWebServer()
         loadDocIcon()
         await refresh()
         startPolling()
+
+        // Discover mimoLive installations off the main thread (may block on slow filesystems)
+        availableMimoLiveApps = await MimoLiveApp.findAll()
+        if let savedPath = UserDefaults.standard.string(forKey: "selectedMimoLiveURL") {
+            let savedURL = URL(fileURLWithPath: savedPath)
+            if availableMimoLiveApps.contains(where: { $0.url.standardizedFileURL == savedURL.standardizedFileURL }) {
+                selectedMimoLiveURL = savedURL
+            }
+        }
     }
 
     // MARK: - Web Server
@@ -236,7 +237,6 @@ final class AppState: ObservableObject {
     func refresh() async {
         let running = monitor.isMimoLiveRunning()
         let docs: [MimoDocument] = running ? ((try? await monitor.fetchOpenDocuments()) ?? []) : []
-        let local = scanner.scanLocalDocuments()
 
         // Manage WebSocket lifecycle based on mimoLive running state
         if running && !mimoWebSocket.isConnected {
@@ -247,8 +247,14 @@ final class AppState: ObservableObject {
 
         isMimoLiveRunning = running
         openDocuments = docs
-        localDocuments = local
         pushSnapshotToServer()
+
+        // Scan local documents in a detached task (may be slow on iCloud-synced folders)
+        Task { @MainActor [scanner] in
+            let local = await scanner.scanLocalDocuments()
+            self.localDocuments = local
+            self.pushSnapshotToServer()
+        }
     }
 
     // MARK: - mimoLive Control
@@ -282,7 +288,9 @@ final class AppState: ObservableObject {
 
     func openSettings() {
         if settingsWindowController == nil {
-            let view = SettingsView().environmentObject(self)
+            let view = SettingsView()
+                .environmentObject(self)
+                .environmentObject(UpdaterService.shared)
             let hosting = NSHostingController(rootView: view)
             let window = NSWindow(contentViewController: hosting)
             window.title = "mlController Settings"

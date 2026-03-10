@@ -19,6 +19,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
 struct SettingsView: View {
 
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var updaterService: UpdaterService
     @State private var selection: SettingsPage? = .mimoLive
     @State private var newPassword: String = ""
     @State private var confirmPassword: String = ""
@@ -208,6 +209,22 @@ struct SettingsView: View {
                 Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")")
                     .foregroundColor(.secondary)
             }
+
+            Divider()
+                .frame(width: 200)
+
+            VStack(spacing: 10) {
+                Toggle("Automatically check for updates", isOn: Binding(
+                    get: { updaterService.automaticallyChecksForUpdates },
+                    set: { updaterService.automaticallyChecksForUpdates = $0 }
+                ))
+
+                Button("Check for Updates\u{2026}") {
+                    updaterService.checkForUpdates()
+                }
+                .disabled(!updaterService.canCheckForUpdates)
+            }
+            .frame(width: 250)
 
             Divider()
                 .frame(width: 200)

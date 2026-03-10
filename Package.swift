@@ -10,13 +10,18 @@ let package = Package(
         .package(
             url: "https://github.com/httpswift/swifter.git",
             .upToNextMajor(from: "1.5.0")
+        ),
+        .package(
+            url: "https://github.com/sparkle-project/Sparkle",
+            .upToNextMajor(from: "2.9.0")
         )
     ],
     targets: [
         .executableTarget(
             name: "mlController",
             dependencies: [
-                .product(name: "Swifter", package: "swifter")
+                .product(name: "Swifter", package: "swifter"),
+                .product(name: "Sparkle", package: "Sparkle")
             ],
             path: "Sources/mlController",
             resources: [

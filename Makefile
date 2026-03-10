@@ -6,6 +6,7 @@ APP_BUNDLE    = $(APP_NAME).app
 CONTENTS      = $(APP_BUNDLE)/Contents
 MACOS_DIR     = $(CONTENTS)/MacOS
 RESOURCES_DIR = $(CONTENTS)/Resources
+FRAMEWORKS_DIR = $(CONTENTS)/Frameworks
 # SPM resource bundle name: <PackageName>_<TargetName>.bundle
 RESOURCE_BUNDLE = $(APP_NAME)_$(APP_NAME).bundle
 
@@ -15,8 +16,13 @@ NOTARY_PROFILE = mlController          # stored via: xcrun notarytool store-cred
 VERSION       := $(shell /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist 2>/dev/null || echo "1.0")
 DMG_NAME      = $(APP_NAME)-$(VERSION).dmg
 
+# ── Sparkle Framework ────────────────────────────────────────────────────────
+SPARKLE_XCFW   = .build/artifacts/sparkle/Sparkle/Sparkle.xcframework
+SPARKLE_FW     = $(SPARKLE_XCFW)/macos-arm64_x86_64/Sparkle.framework
+SPARKLE_BIN    = .build/artifacts/sparkle/Sparkle/bin
+
 .PHONY: build bundle install install-login-agent uninstall-login-agent clean run \
-        release sign notarize dmg setup-notarization help
+        release sign notarize dmg appcast setup-notarization setup-sparkle-keys help
 
 help:
 	@echo "mlController Build System"
@@ -28,11 +34,13 @@ help:
 	@echo "    make run                  — build and open the app"
 	@echo ""
 	@echo "  Distribution:"
-	@echo "    make release              — build, sign, notarize, and create DMG"
+	@echo "    make release              — build, sign, notarize, create DMG + appcast"
 	@echo "    make sign                 — build bundle with Developer ID signing"
 	@echo "    make notarize             — submit signed .app for Apple notarization"
 	@echo "    make dmg                  — create distributable .dmg"
+	@echo "    make appcast              — generate Sparkle appcast.xml from releases/"
 	@echo "    make setup-notarization   — store Apple ID credentials in keychain"
+	@echo "    make setup-sparkle-keys   — generate Sparkle EdDSA signing keys"
 	@echo ""
 	@echo "  System:"
 	@echo "    make install-login-agent  — install LaunchAgent (runs at login)"
@@ -50,10 +58,13 @@ build:
 bundle: build
 	@echo "==> Assembling $(APP_BUNDLE)..."
 	@rm -rf $(APP_BUNDLE)
-	@mkdir -p $(MACOS_DIR) $(RESOURCES_DIR)
+	@mkdir -p $(MACOS_DIR) $(RESOURCES_DIR) $(FRAMEWORKS_DIR)
 
 	@# Binary
 	cp $(BUILD_DIR)/$(APP_NAME) $(MACOS_DIR)/$(APP_NAME)
+
+	@# Add rpath so the binary can find Sparkle.framework at runtime
+	install_name_tool -add_rpath @executable_path/../Frameworks $(MACOS_DIR)/$(APP_NAME)
 
 	@# Info.plist — expand Xcode build variable references
 	sed -e 's/\$$(DEVELOPMENT_LANGUAGE)/en/g' \
@@ -68,8 +79,23 @@ bundle: build
 	@# Web assets — copy directly to main Resources so Bundle.main can find them
 	cp -r Sources/mlController/Resources/web $(RESOURCES_DIR)/web
 
-	@# Ad-hoc code sign with Hardened Runtime (--options runtime required for notarization)
-	codesign --force --deep --sign - --options runtime --entitlements mlController.entitlements $(APP_BUNDLE)
+	@# Sparkle.framework — copy preserving symlinks
+	cp -a $(SPARKLE_FW) $(FRAMEWORKS_DIR)/Sparkle.framework
+
+	@# Ad-hoc code sign — inside-out for Sparkle (no --deep)
+	codesign --force --sign - --options runtime \
+	    $(FRAMEWORKS_DIR)/Sparkle.framework/Versions/B/XPCServices/Installer.xpc
+	codesign --force --sign - --options runtime \
+	    $(FRAMEWORKS_DIR)/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc
+	codesign --force --sign - --options runtime \
+	    $(FRAMEWORKS_DIR)/Sparkle.framework/Versions/B/Autoupdate
+	codesign --force --sign - --options runtime \
+	    $(FRAMEWORKS_DIR)/Sparkle.framework/Versions/B/Updater.app
+	codesign --force --sign - --options runtime \
+	    $(FRAMEWORKS_DIR)/Sparkle.framework
+	codesign --force --sign - --options runtime \
+	    --entitlements mlController.entitlements \
+	    $(APP_BUNDLE)
 	@echo "==> Bundle created: $(APP_BUNDLE)"
 
 # ── Step 3: Install to /Applications ─────────────────────────────────────────
@@ -81,15 +107,17 @@ install: bundle
 	@echo "==> Installed."
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  Distribution: sign → notarize → dmg
+#  Distribution: sign → notarize → dmg → appcast
 # ══════════════════════════════════════════════════════════════════════════════
 
 # ── Full Release Pipeline ─────────────────────────────────────────────────────
 
-release: sign notarize dmg
+release: sign notarize dmg appcast
 	@echo ""
 	@echo "════════════════════════════════════════════════════"
 	@echo "  ✅  $(DMG_NAME) is ready for distribution!"
+	@echo "  appcast.xml has been updated."
+	@echo "  Remember to commit appcast.xml and push."
 	@echo "════════════════════════════════════════════════════"
 
 # ── Developer ID Signing ─────────────────────────────────────────────────────
@@ -97,10 +125,13 @@ release: sign notarize dmg
 sign: build
 	@echo "==> Assembling $(APP_BUNDLE) (Developer ID signed)..."
 	@rm -rf $(APP_BUNDLE)
-	@mkdir -p $(MACOS_DIR) $(RESOURCES_DIR)
+	@mkdir -p $(MACOS_DIR) $(RESOURCES_DIR) $(FRAMEWORKS_DIR)
 
 	@# Binary
 	cp $(BUILD_DIR)/$(APP_NAME) $(MACOS_DIR)/$(APP_NAME)
+
+	@# Add rpath so the binary can find Sparkle.framework at runtime
+	install_name_tool -add_rpath @executable_path/../Frameworks $(MACOS_DIR)/$(APP_NAME)
 
 	@# Info.plist
 	sed -e 's/\$$(DEVELOPMENT_LANGUAGE)/en/g' \
@@ -115,13 +146,23 @@ sign: build
 	@# Web assets
 	cp -r Sources/mlController/Resources/web $(RESOURCES_DIR)/web
 
-	@# Developer ID code sign with Hardened Runtime
-	codesign --force --deep \
-	         --sign "$(SIGN_IDENTITY)" \
-	         --options runtime \
-	         --entitlements mlController.entitlements \
-	         --timestamp \
-	         $(APP_BUNDLE)
+	@# Sparkle.framework — copy preserving symlinks
+	cp -a $(SPARKLE_FW) $(FRAMEWORKS_DIR)/Sparkle.framework
+
+	@# Developer ID code sign — inside-out for Sparkle (no --deep)
+	codesign --force --sign "$(SIGN_IDENTITY)" --options runtime --timestamp \
+	    $(FRAMEWORKS_DIR)/Sparkle.framework/Versions/B/XPCServices/Installer.xpc
+	codesign --force --sign "$(SIGN_IDENTITY)" --options runtime --timestamp \
+	    $(FRAMEWORKS_DIR)/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc
+	codesign --force --sign "$(SIGN_IDENTITY)" --options runtime --timestamp \
+	    $(FRAMEWORKS_DIR)/Sparkle.framework/Versions/B/Autoupdate
+	codesign --force --sign "$(SIGN_IDENTITY)" --options runtime --timestamp \
+	    $(FRAMEWORKS_DIR)/Sparkle.framework/Versions/B/Updater.app
+	codesign --force --sign "$(SIGN_IDENTITY)" --options runtime --timestamp \
+	    $(FRAMEWORKS_DIR)/Sparkle.framework
+	codesign --force --sign "$(SIGN_IDENTITY)" --options runtime --timestamp \
+	    --entitlements mlController.entitlements \
+	    $(APP_BUNDLE)
 
 	@echo "==> Verifying signature..."
 	codesign --verify --deep --strict --verbose=2 $(APP_BUNDLE)
@@ -172,6 +213,16 @@ dmg:
 
 	@echo "==> Created: $(DMG_NAME)"
 
+# ── Sparkle Appcast Generation ───────────────────────────────────────────────
+
+appcast:
+	@echo "==> Generating appcast..."
+	@mkdir -p releases
+	cp $(DMG_NAME) releases/
+	$(SPARKLE_BIN)/generate_appcast releases/ -o appcast.xml \
+	    --download-url-prefix "https://github.com/boinx/mlController/releases/download/v$(VERSION)/"
+	@echo "==> Appcast updated: appcast.xml"
+
 # ── Setup: Store Notarization Credentials ────────────────────────────────────
 #    Run once to store your Apple ID / app-specific password in the keychain.
 #    This will prompt interactively for:
@@ -188,6 +239,15 @@ setup-notarization:
 	@echo ""
 	xcrun notarytool store-credentials "$(NOTARY_PROFILE)"
 	@echo "==> Credentials stored as keychain profile '$(NOTARY_PROFILE)'."
+
+# ── Sparkle Key Generation (one-time) ────────────────────────────────────────
+
+setup-sparkle-keys:
+	@echo "==> Generating Sparkle EdDSA signing keys..."
+	@echo "    The private key will be stored in your macOS Keychain."
+	@echo "    The public key will be printed below — add it to Info.plist as SUPublicEDKey."
+	@echo ""
+	$(SPARKLE_BIN)/generate_keys
 
 # ── Login Item (LaunchAgent) ──────────────────────────────────────────────────
 
@@ -211,7 +271,7 @@ uninstall-login-agent:
 clean:
 	@echo "==> Cleaning..."
 	@swift package clean
-	@rm -rf $(APP_BUNDLE) .build $(APP_NAME).zip $(APP_NAME)-*.dmg dmg_staging
+	@rm -rf $(APP_BUNDLE) .build $(APP_NAME).zip $(APP_NAME)-*.dmg dmg_staging releases
 	@echo "==> Clean complete."
 
 # ── Quick Run (debug build, open app) ─────────────────────────────────────────

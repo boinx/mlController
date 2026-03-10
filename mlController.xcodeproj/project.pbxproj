@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1E80F573BF1E825CDB17A64D /* MimoDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F00B0D04DB91F65DD1A7972 /* MimoDocument.swift */; };
+		21F3E6F77776990BF9A5992C /* Sparkle in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 8CE9DBE5A6DD901F233B94E4 /* Sparkle */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		22F2B5BA7CD9BCFF4B7F9909 /* LocalDocumentScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91820ED04DEAA6E3B5CC7E67 /* LocalDocumentScanner.swift */; };
 		39865AC49889AD877AF91BD5 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83D48C122C48A899186291C1 /* App.swift */; };
 		64C51EDCDFC7A53D37A3CD3F /* MimoLiveApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00782C1F03DF7547CE3881B /* MimoLiveApp.swift */; };
@@ -19,9 +20,25 @@
 		BE2DE2621604F3D5EAF8B849 /* Swifter in Frameworks */ = {isa = PBXBuildFile; productRef = 866095FBC1864A38216F5BE2 /* Swifter */; };
 		C7A9D07E95221CC8A1B3A93B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9294EA28CA05771D834291D /* SettingsView.swift */; };
 		D56053ED407E55F35331EF00 /* WebServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FD828745AE83B43D56639B7 /* WebServer.swift */; };
+		F065C35BDC37B79E3BA69CF8 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 8CE9DBE5A6DD901F233B94E4 /* Sparkle */; };
+		F51B34DDAF9D983F7100458B /* UpdaterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCEA9FEBC93B895500041323 /* UpdaterService.swift */; };
 		FCD513A7A2B20FB1F6D3CF7B /* MimoLiveWebSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728B162995A88F007565F840 /* MimoLiveWebSocket.swift */; };
 		FE257C8053232EC4A247E0D5 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = A9826F7665F1F3EF3234798E /* AppIcon.icns */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C527B428EA64E8FE7713CBF0 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				21F3E6F77776990BF9A5992C /* Sparkle in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		5F00B0D04DB91F65DD1A7972 /* MimoDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MimoDocument.swift; sourceTree = "<group>"; };
@@ -35,6 +52,7 @@
 		A9826F7665F1F3EF3234798E /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		C1EDE7F13A04DDE5F655A22B /* MimoLiveController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MimoLiveController.swift; sourceTree = "<group>"; };
 		C9294EA28CA05771D834291D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		CCEA9FEBC93B895500041323 /* UpdaterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterService.swift; sourceTree = "<group>"; };
 		D00782C1F03DF7547CE3881B /* MimoLiveApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MimoLiveApp.swift; sourceTree = "<group>"; };
 		D673ADA4A2FF8A9DC1A70B50 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		F859F499BCFE9BFF413D06C6 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
@@ -46,6 +64,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BE2DE2621604F3D5EAF8B849 /* Swifter in Frameworks */,
+				F065C35BDC37B79E3BA69CF8 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,6 +120,7 @@
 				C1EDE7F13A04DDE5F655A22B /* MimoLiveController.swift */,
 				7A562B66BC8234EE65A253ED /* MimoLiveMonitor.swift */,
 				728B162995A88F007565F840 /* MimoLiveWebSocket.swift */,
+				CCEA9FEBC93B895500041323 /* UpdaterService.swift */,
 				5FD828745AE83B43D56639B7 /* WebServer.swift */,
 			);
 			path = Services;
@@ -138,6 +158,7 @@
 				F9159E2D0A8C27AD0123025E /* Sources */,
 				00950C56E977658599FF76A2 /* Resources */,
 				BFFD27D28397E3F39F80DBF9 /* Frameworks */,
+				C527B428EA64E8FE7713CBF0 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -146,6 +167,7 @@
 			name = mlController;
 			packageProductDependencies = (
 				866095FBC1864A38216F5BE2 /* Swifter */,
+				8CE9DBE5A6DD901F233B94E4 /* Sparkle */,
 			);
 			productName = mlController;
 			productReference = 986930A92263139B18607F01 /* mlController.app */;
@@ -177,6 +199,7 @@
 			mainGroup = C138C98AB7A1D5A4AB552AE6;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				0404E44C82D4D5327BB5D584 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				E04E8CBAA4B111D26A0C584C /* XCRemoteSwiftPackageReference "swifter" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -215,6 +238,7 @@
 				ABA25074EB7255E4AE6EBC4F /* MimoLiveMonitor.swift in Sources */,
 				FCD513A7A2B20FB1F6D3CF7B /* MimoLiveWebSocket.swift in Sources */,
 				C7A9D07E95221CC8A1B3A93B /* SettingsView.swift in Sources */,
+				F51B34DDAF9D983F7100458B /* UpdaterService.swift in Sources */,
 				D56053ED407E55F35331EF00 /* WebServer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -354,10 +378,7 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "mimoLive Controller";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.boinx.mlcontroller;
@@ -380,10 +401,7 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "mimoLive Controller";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.boinx.mlcontroller;
@@ -417,6 +435,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		0404E44C82D4D5327BB5D584 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 2.9.0;
+			};
+		};
 		E04E8CBAA4B111D26A0C584C /* XCRemoteSwiftPackageReference "swifter" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/httpswift/swifter.git";
@@ -432,6 +458,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E04E8CBAA4B111D26A0C584C /* XCRemoteSwiftPackageReference "swifter" */;
 			productName = Swifter;
+		};
+		8CE9DBE5A6DD901F233B94E4 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0404E44C82D4D5327BB5D584 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

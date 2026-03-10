@@ -20,25 +20,29 @@ struct MimoLiveApp: Identifiable, Hashable {
 // MARK: - Scanner
 
 extension MimoLiveApp {
-    static func findAll(bundleID: String = "com.boinx.mimoLive") -> [MimoLiveApp] {
+    static func findAll(bundleID: String = "com.boinx.mimoLive") async -> [MimoLiveApp] {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: _findAllSync(bundleID: bundleID))
+            }
+        }
+    }
+
+    private static func _findAllSync(bundleID: String) -> [MimoLiveApp] {
         let fm = FileManager.default
         var seen = Set<String>()
         var results: [MimoLiveApp] = []
 
-        let searchDirs: [URL] = ([
-            URL(fileURLWithPath: "/Applications"),
-            fm.urls(for: .applicationDirectory, in: .userDomainMask).first,
-            fm.urls(for: .downloadsDirectory, in: .userDomainMask).first,
-        ] as [URL?]).compactMap { $0 }
+        let searchDirs = [
+            "/Applications",
+            NSHomeDirectory() + "/Applications",
+        ]
 
-        for dir in searchDirs {
-            guard let entries = try? fm.contentsOfDirectory(
-                at: dir,
-                includingPropertiesForKeys: [.isApplicationKey],
-                options: [.skipsHiddenFiles]
-            ) else { continue }
+        for dirPath in searchDirs {
+            guard let names = try? fm.contentsOfDirectory(atPath: dirPath) else { continue }
 
-            for appURL in entries where appURL.pathExtension == "app" {
+            for name in names where name.hasSuffix(".app") {
+                let appURL = URL(fileURLWithPath: dirPath + "/" + name)
                 let canonical = appURL.standardizedFileURL.path
                 guard !seen.contains(canonical) else { continue }
 

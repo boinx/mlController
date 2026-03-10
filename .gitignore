@@ -24,6 +24,7 @@ mlController.app/
 *.dmg
 *.zip
 dmg_staging/
+releases/
 
 # Claude Code local settings (launch.json is kept; settings are machine-specific)
 .claude/settings.local.json

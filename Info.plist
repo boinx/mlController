@@ -29,6 +29,12 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/boinx/mlController/main/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string></string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2025 Boinx Software International GmbH. All rights reserved.</string>
 	<key>NSPrincipalClass</key>
