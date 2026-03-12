@@ -14,7 +14,7 @@ RESOURCE_BUNDLE = $(APP_NAME)_$(APP_NAME).bundle
 SIGN_IDENTITY = Developer ID Application: Boinx Software International GmbH (6372P8EH2J)
 NOTARY_PROFILE = mlController          # stored via: xcrun notarytool store-credentials
 VERSION       := $(shell /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist 2>/dev/null || echo "1.0")
-DMG_NAME      = $(APP_NAME)-$(VERSION).dmg
+RELEASE_ZIP   = $(APP_NAME)-$(VERSION).zip
 
 # ── Sparkle Framework ────────────────────────────────────────────────────────
 SPARKLE_XCFW   = .build/artifacts/sparkle/Sparkle/Sparkle.xcframework
@@ -22,7 +22,7 @@ SPARKLE_FW     = $(SPARKLE_XCFW)/macos-arm64_x86_64/Sparkle.framework
 SPARKLE_BIN    = .build/artifacts/sparkle/Sparkle/bin
 
 .PHONY: build bundle install install-login-agent uninstall-login-agent clean run \
-        release sign notarize dmg appcast setup-notarization setup-sparkle-keys help
+        release sign notarize zip appcast setup-notarization setup-sparkle-keys help
 
 help:
 	@echo "mlController Build System"
@@ -34,10 +34,10 @@ help:
 	@echo "    make run                  — build and open the app"
 	@echo ""
 	@echo "  Distribution:"
-	@echo "    make release              — build, sign, notarize, create DMG + appcast"
+	@echo "    make release              — build, sign, notarize, create ZIP + appcast"
 	@echo "    make sign                 — build bundle with Developer ID signing"
 	@echo "    make notarize             — submit signed .app for Apple notarization"
-	@echo "    make dmg                  — create distributable .dmg"
+	@echo "    make zip                  — create distributable .zip"
 	@echo "    make appcast              — generate Sparkle appcast.xml from releases/"
 	@echo "    make setup-notarization   — store Apple ID credentials in keychain"
 	@echo "    make setup-sparkle-keys   — generate Sparkle EdDSA signing keys"
@@ -112,10 +112,10 @@ install: bundle
 
 # ── Full Release Pipeline ─────────────────────────────────────────────────────
 
-release: sign notarize dmg appcast
+release: sign notarize zip appcast
 	@echo ""
 	@echo "════════════════════════════════════════════════════"
-	@echo "  ✅  $(DMG_NAME) is ready for distribution!"
+	@echo "  ✅  $(RELEASE_ZIP) is ready for distribution!"
 	@echo "  appcast.xml has been updated."
 	@echo "  Remember to commit appcast.xml and push."
 	@echo "════════════════════════════════════════════════════"
@@ -172,11 +172,11 @@ sign: build
 
 notarize:
 	@echo "==> Creating ZIP for notarization..."
-	@rm -f $(APP_NAME).zip
-	ditto -c -k --keepParent $(APP_BUNDLE) $(APP_NAME).zip
+	@rm -f $(APP_NAME)-notarize.zip
+	ditto -c -k --keepParent $(APP_BUNDLE) $(APP_NAME)-notarize.zip
 
 	@echo "==> Submitting to Apple notarization service..."
-	xcrun notarytool submit $(APP_NAME).zip \
+	xcrun notarytool submit $(APP_NAME)-notarize.zip \
 	      --keychain-profile "$(NOTARY_PROFILE)" \
 	      --wait
 
@@ -186,39 +186,23 @@ notarize:
 	@echo "==> Verifying notarization..."
 	spctl --assess --type exec --verbose=2 $(APP_BUNDLE)
 
-	@rm -f $(APP_NAME).zip
+	@rm -f $(APP_NAME)-notarize.zip
 	@echo "==> Notarization complete."
 
-# ── DMG Creation ─────────────────────────────────────────────────────────────
+# ── ZIP Creation ─────────────────────────────────────────────────────────────
 
-dmg:
-	@echo "==> Creating $(DMG_NAME)..."
-	@rm -f $(DMG_NAME)
-
-	@# Create a temporary directory with the app and an Applications symlink
-	@rm -rf dmg_staging
-	@mkdir -p dmg_staging
-	cp -a $(APP_BUNDLE) dmg_staging/
-	ln -s /Applications dmg_staging/Applications
-
-	hdiutil create -volname "$(APP_NAME)" \
-	               -srcfolder dmg_staging \
-	               -ov -format UDZO \
-	               $(DMG_NAME)
-
-	@rm -rf dmg_staging
-
-	@# Sign the DMG itself
-	codesign --force --sign "$(SIGN_IDENTITY)" --timestamp $(DMG_NAME)
-
-	@echo "==> Created: $(DMG_NAME)"
+zip:
+	@echo "==> Creating $(RELEASE_ZIP)..."
+	@rm -f $(RELEASE_ZIP)
+	ditto -c -k --sequesterRsrc --keepParent $(APP_BUNDLE) $(RELEASE_ZIP)
+	@echo "==> Created: $(RELEASE_ZIP)"
 
 # ── Sparkle Appcast Generation ───────────────────────────────────────────────
 
 appcast:
 	@echo "==> Generating appcast..."
 	@mkdir -p releases
-	cp $(DMG_NAME) releases/
+	cp $(RELEASE_ZIP) releases/
 	$(SPARKLE_BIN)/generate_appcast releases/ -o appcast.xml \
 	    --download-url-prefix "https://github.com/boinx/mlController/releases/download/v$(VERSION)/"
 	@echo "==> Appcast updated: appcast.xml"
@@ -271,7 +255,7 @@ uninstall-login-agent:
 clean:
 	@echo "==> Cleaning..."
 	@swift package clean
-	@rm -rf $(APP_BUNDLE) .build $(APP_NAME).zip $(APP_NAME)-*.dmg dmg_staging releases
+	@rm -rf $(APP_BUNDLE) .build $(APP_NAME).zip $(APP_NAME)-*.zip $(APP_NAME)-*.dmg dmg_staging releases
 	@echo "==> Clean complete."
 
 # ── Quick Run (debug build, open app) ─────────────────────────────────────────

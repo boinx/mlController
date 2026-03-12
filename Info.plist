@@ -19,7 +19,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.2</string>
+	<string>1.3</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>LSUIElement</key>
@@ -29,15 +29,15 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/boinx/mlController/main/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>7ytDjp3ZSkD3N2Fa9fwk5NSgTcabbI+rnTBoyvbT37k=</string>
-	<key>SUEnableAutomaticChecks</key>
-	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2025 Boinx Software International GmbH. All rights reserved.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/boinx/mlController/main/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>7ytDjp3ZSkD3N2Fa9fwk5NSgTcabbI+rnTBoyvbT37k=</string>
 </dict>
 </plist>
