@@ -103,7 +103,7 @@ bundle: build
 install: bundle
 	@echo "==> Installing to /Applications/$(APP_BUNDLE)..."
 	@rm -rf /Applications/$(APP_BUNDLE)
-	cp -r $(APP_BUNDLE) /Applications/$(APP_BUNDLE)
+	cp -a $(APP_BUNDLE) /Applications/$(APP_BUNDLE)
 	@echo "==> Installed."
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -198,7 +198,7 @@ dmg:
 	@# Create a temporary directory with the app and an Applications symlink
 	@rm -rf dmg_staging
 	@mkdir -p dmg_staging
-	cp -r $(APP_BUNDLE) dmg_staging/
+	cp -a $(APP_BUNDLE) dmg_staging/
 	ln -s /Applications dmg_staging/Applications
 
 	hdiutil create -volname "$(APP_NAME)" \

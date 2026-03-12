@@ -10,7 +10,7 @@
             <sparkle:version>1</sparkle:version>
             <sparkle:shortVersionString>1.2</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>10.13</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/boinx/mlController/releases/download/v1.2/mlController-1.2.dmg" length="5149199" type="application/octet-stream" sparkle:edSignature="/OOFOH8Xe4k5kdIKJLfk1B6Hz+7TCMlazEEhQtiZIe7y6ev69cRL4Bl56Of0+DuDzTeHUW7K+FFwmPY/HgBLBg=="/>
+            <enclosure url="https://github.com/boinx/mlController/releases/download/v1.2/mlController-1.2.dmg" length="3022792" type="application/octet-stream" sparkle:edSignature="Ocy5aW6NxKkS/feDHUEu4BZEOYd5qujsyyDEdW4TxcD3lW064DTAzngy8pxantu2gf+RkLpK+ofqZUEh36FYDQ=="/>
         </item>
     </channel>
 </rss>
