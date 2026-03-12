@@ -41,7 +41,7 @@ targets:
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         SUFeedURL: "https://raw.githubusercontent.com/boinx/mlController/main/appcast.xml"
-        SUPublicEDKey: ""
+        SUPublicEDKey: "7ytDjp3ZSkD3N2Fa9fwk5NSgTcabbI+rnTBoyvbT37k="
         SUEnableAutomaticChecks: true
 
     settings:

@@ -32,7 +32,7 @@
 	<key>SUFeedURL</key>
 	<string>https://raw.githubusercontent.com/boinx/mlController/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string></string>
+	<string>7ytDjp3ZSkD3N2Fa9fwk5NSgTcabbI+rnTBoyvbT37k=</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
