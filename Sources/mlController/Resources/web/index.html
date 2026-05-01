@@ -1136,7 +1136,13 @@
     </div>
 
     <!-- Source Assignment -->
-    <div class="section-label">Source Assignment</div>
+    <div class="section-label">
+      Source Assignment
+      <button class="btn-zoom" id="btn-create-sources" onclick="createSourcesForParticipants()"
+              style="float:right; padding:6px 12px; font-size:12px; display:none;">
+        + Create Source per Participant
+      </button>
+    </div>
     <div id="sources-container">
       <div class="empty-state">Loading Zoom sources...</div>
     </div>

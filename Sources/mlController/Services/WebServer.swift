@@ -131,6 +131,7 @@ final class WebServer: @unchecked Sendable {
         server.GET["/api/zoom/sources"] = handleZoomSources
         server.GET["/api/zoom/participants"] = handleZoomParticipants
         server.POST["/api/zoom/assign"] = handleZoomAssign
+        server.POST["/api/zoom/create-sources"] = handleZoomCreateSources
         server.POST["/api/zoom/request-recording"] = handleZoomRequestRecording
         server.POST["/api/zoom/leave"] = handleZoomLeave
         server.POST["/api/zoom/meetingaction"] = handleZoomMeetingAction
@@ -440,6 +441,115 @@ final class WebServer: @unchecked Sendable {
 
             if let err = httpError { return jsonResponse(["error": err]) }
             return jsonResponse(result)
+        }
+    }
+
+    /// Create one Zoom participant source per current meeting participant.
+    /// Each new source is pre-assigned to a specific user via zoom-userid.
+    /// Existing Zoom sources already assigned to participants are left alone —
+    /// only participants without a matching source get a new one created.
+    private var handleZoomCreateSources: ((HttpRequest) -> HttpResponse) {
+        return { [weak self] _ in
+            guard let self = self else { return .internalServerError }
+            let snap = self.snapshot
+            guard snap.running, let firstDoc = snap.openDocuments.first,
+                  let docId = firstDoc["id"] else {
+                return jsonResponse(["error": "No document open", "created": 0])
+            }
+
+            // Fetch current participants
+            guard let partURL = URL(string: "http://localhost:8989/api/v1/zoom/participants") else {
+                return jsonResponse(["error": "Bad URL"])
+            }
+            let (partData, partErr) = self.syncGET(partURL)
+            if let err = partErr { return jsonResponse(["error": "Participants: \(err)"]) }
+            guard let partData = partData,
+                  let partJSON = try? JSONSerialization.jsonObject(with: partData) as? [String: Any],
+                  let participants = partJSON["data"] as? [[String: Any]] else {
+                return jsonResponse(["error": "Failed to parse participants", "created": 0])
+            }
+
+            // Fetch existing sources to skip participants that already have one
+            guard let srcURL = URL(string: "http://localhost:8989/api/v1/documents/\(docId)/sources") else {
+                return jsonResponse(["error": "Bad URL"])
+            }
+            let (srcData, _) = self.syncGET(srcURL)
+            var assignedUserIds = Set<Int>()
+            if let srcData = srcData,
+               let srcJSON = try? JSONSerialization.jsonObject(with: srcData) as? [String: Any],
+               let items = srcJSON["data"] as? [[String: Any]] {
+                for item in items {
+                    guard let attrs = item["attributes"] as? [String: Any],
+                          let type = attrs["source-type"] as? String,
+                          type == "com.boinx.mimoLive.sources.zoomparticipant",
+                          let uid = attrs["zoom-userid"] as? Int else { continue }
+                    assignedUserIds.insert(uid)
+                }
+            }
+
+            // Create a source for each participant who doesn't already have one
+            var created = 0
+            var skipped = 0
+            var errors: [String] = []
+            for participant in participants {
+                // mimoLive returns flat participant objects: {id: 12345, name: "Alice", userRole: "Host"}
+                guard let userIdAny = participant["id"],
+                      let userId = (userIdAny as? Int) ?? Int("\(userIdAny)") else {
+                    continue
+                }
+                let name = (participant["name"] as? String) ?? "Participant \(userId)"
+
+                if assignedUserIds.contains(userId) {
+                    skipped += 1
+                    continue
+                }
+
+                let body: [String: Any] = [
+                    "source-type": "com.boinx.mimoLive.sources.zoomparticipant",
+                    "name": name,
+                    "zoom-userid": userId,
+                    "zoom-userselectiontype": 1,
+                ]
+                guard let postURL = URL(string: "http://localhost:8989/api/v1/documents/\(docId)/sources"),
+                      let postData = try? JSONSerialization.data(withJSONObject: body) else {
+                    errors.append("Failed to build request for \(name)")
+                    continue
+                }
+
+                var req = URLRequest(url: postURL)
+                req.httpMethod = "POST"
+                req.setValue("application/vnd.api+json", forHTTPHeaderField: "Content-Type")
+                req.httpBody = postData
+
+                let sem = DispatchSemaphore(value: 0)
+                var httpStatus = 0
+                var httpError: String?
+                let task = URLSession.shared.dataTask(with: req) { _, response, error in
+                    if let error = error {
+                        httpError = error.localizedDescription
+                    } else if let httpResp = response as? HTTPURLResponse {
+                        httpStatus = httpResp.statusCode
+                    }
+                    sem.signal()
+                }
+                task.resume()
+                _ = sem.wait(timeout: .now() + 10)
+
+                if let err = httpError {
+                    errors.append("\(name): \(err)")
+                } else if httpStatus >= 200 && httpStatus < 300 {
+                    created += 1
+                } else {
+                    errors.append("\(name): HTTP \(httpStatus)")
+                }
+            }
+
+            return jsonResponse([
+                "status": "ok",
+                "created": created,
+                "skipped": skipped,
+                "errors": errors,
+            ])
         }
     }
 

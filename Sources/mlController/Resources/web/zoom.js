@@ -26,6 +26,7 @@ const zoomMeetingId      = document.getElementById('zoom-meeting-id');
 const zoomPasscode       = document.getElementById('zoom-passcode');
 const zoomDisplayName    = document.getElementById('zoom-display-name');
 const zoomAccountName    = document.getElementById('zoom-account-name');
+const btnCreateSources   = document.getElementById('btn-create-sources');
 
 // ── Fetch Zoom Data ──────────────────────────────────────────────────────────
 
@@ -79,6 +80,22 @@ function zoomRender() {
     parts.push(`${count} participant${count !== 1 ? 's' : ''}`);
     if (host) parts.push(`Host: ${host.name}`);
     meetingActiveSub.textContent = parts.join(' · ');
+  }
+
+  // Show "Create Source per Participant" button when there are participants
+  // who don't yet have a dedicated source assigned.
+  if (btnCreateSources) {
+    const assignedIds = new Set(
+      currentSources
+        .filter(s => (s['zoom-userselectiontype'] === 1) && s['zoom-userid'])
+        .map(s => s['zoom-userid'])
+    );
+    const unassigned = currentParticipants.filter(p => !assignedIds.has(p.id));
+    btnCreateSources.style.display = (inMeeting && unassigned.length > 0) ? '' : 'none';
+    btnCreateSources.textContent =
+      unassigned.length > 0
+        ? `+ Create source for ${unassigned.length} participant${unassigned.length !== 1 ? 's' : ''}`
+        : '+ Create Source per Participant';
   }
 
   if (currentSources.length === 0) {
@@ -224,6 +241,33 @@ async function onAssign(selectEl) {
     assignInFlight = false;
     // Refresh to revert select to actual state
     await fetchZoomData();
+  }
+}
+
+// ── Create Sources for Participants ──────────────────────────────────────────
+
+async function createSourcesForParticipants() {
+  if (!btnCreateSources) return;
+  const originalText = btnCreateSources.textContent;
+  btnCreateSources.disabled = true;
+  btnCreateSources.textContent = 'Creating sources…';
+  try {
+    const res = await fetch('/api/zoom/create-sources', { method: 'POST' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    btnCreateSources.textContent = data.created > 0
+      ? `Created ${data.created} source${data.created !== 1 ? 's' : ''}`
+      : 'All participants already have sources';
+    setTimeout(fetchZoomData, 500);
+  } catch (e) {
+    console.error('Create sources failed:', e);
+    btnCreateSources.textContent = 'Failed: ' + e.message;
+  } finally {
+    setTimeout(() => {
+      btnCreateSources.disabled = false;
+      btnCreateSources.textContent = originalText;
+    }, 2000);
   }
 }
 
