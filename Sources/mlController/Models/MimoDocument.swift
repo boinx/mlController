@@ -10,9 +10,15 @@ struct MimoDocument: Identifiable, Codable, Hashable {
     let width: Int
     let height: Int
     let framerate: Int
+    let samplerate: Int            // audio sample rate in Hz (0 = unknown)
     let duration: Int              // seconds since show started (0 = not live)
     let formattedDuration: String  // "HH:MM:SS"
     let showStart: String?         // ISO date when show went live, nil when off
+    let title: String?             // document title from metadata
+    let show: String?              // show name from metadata
+    let author: String?            // author from metadata
+    let description: String?       // description / comments from metadata
+    let kioskMode: Bool?           // true if document opens in kiosk mode (read from .tvshow plist)
     let outputs: [MimoOutput]
     var sourceCount: Int           // visible sources only (excludes is-hidden)
     let layerCount: Int
@@ -86,6 +92,9 @@ struct MimoDocumentMetadata: Codable {
     let height: Int?
     let samplerate: Int?
     let title: String?
+    let show: String?
+    let author: String?
+    let comments: String?     // mimoLive calls this "comments"; we expose it as "description"
     let duration: Int?
 }
 
@@ -117,8 +126,19 @@ extension MimoDocument {
         self.width = data.attributes.metadata?.width ?? 0
         self.height = data.attributes.metadata?.height ?? 0
         self.framerate = data.attributes.metadata?.framerate ?? 0
+        self.samplerate = data.attributes.metadata?.samplerate ?? 0
         self.duration = Int(data.attributes.duration ?? 0)
         self.formattedDuration = data.attributes.formattedDuration ?? "00:00:00"
+
+        // Metadata fields surfaced for the dashboard
+        self.title = data.attributes.metadata?.title?.nonEmpty
+        self.show = data.attributes.metadata?.show?.nonEmpty
+        self.author = data.attributes.metadata?.author?.nonEmpty
+        self.description = data.attributes.metadata?.comments?.nonEmpty
+
+        // Kiosk mode is not exposed via the mimoLive HTTP API — read it from the
+        // document bundle's Document.plist when we have an on-disk path.
+        self.kioskMode = MimoDocument.readKioskMode(at: data.attributes.filepath)
 
         // Convert Core Foundation timestamp to ISO 8601 for the browser
         if let cfTimestamp = data.attributes.showStart {
@@ -162,4 +182,44 @@ extension MimoDocument {
         guard width > 0 && height > 0 else { return "" }
         return "\(width)x\(height)"
     }
+
+    /// Audio sample rate formatted as "48 kHz" (empty when unknown).
+    var formattedSamplerate: String {
+        guard samplerate > 0 else { return "" }
+        let kHz = Double(samplerate) / 1000.0
+        if kHz == floor(kHz) {
+            return "\(Int(kHz)) kHz"
+        }
+        return String(format: "%.1f kHz", kHz)
+    }
+
+    // MARK: - Kiosk Mode (read from on-disk .tvshow bundle)
+
+    /// Reads `openDocumentInKioskMode` from the document bundle's Document.plist.
+    /// The flag lives at `documentState.showController.showSettings.openDocumentInKioskMode`.
+    /// Returns nil if we don't have a file path or the plist can't be read.
+    static func readKioskMode(at filepath: String?) -> Bool? {
+        guard let filepath = filepath, !filepath.isEmpty else { return nil }
+        let plistURL = URL(fileURLWithPath: filepath)
+            .appendingPathComponent("Document.plist")
+        guard let data = try? Data(contentsOf: plistURL),
+              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil),
+              let dict = plist as? [String: Any] else {
+            return nil
+        }
+        if let documentState = dict["documentState"] as? [String: Any],
+           let showController = documentState["showController"] as? [String: Any],
+           let showSettings = showController["showSettings"] as? [String: Any],
+           let flag = showSettings["openDocumentInKioskMode"] as? Bool {
+            return flag
+        }
+        return nil
+    }
+}
+
+// MARK: - String helper
+
+private extension String {
+    /// Returns nil when the string is empty, otherwise self.
+    var nonEmpty: String? { isEmpty ? nil : self }
 }

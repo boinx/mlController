@@ -157,8 +157,11 @@ function renderOpenDoc(doc) {
   const badge = isLive
     ? '<span class="badge badge-live">live</span>'
     : '<span class="badge badge-open">open</span>';
+  const kioskBadge = doc.kioskMode
+    ? '<span class="badge badge-kiosk" title="Document opens in Kiosk Mode">🔒 kiosk</span>'
+    : '';
 
-  // Build metadata items
+  // Build technical metadata items (resolution / framerate / samplerate / counts)
   const meta = [];
   if (doc.resolution) {
     meta.push(`<span class="doc-meta-item"><span class="meta-icon">🖥</span> ${esc(doc.resolution)}</span>`);
@@ -166,12 +169,36 @@ function renderOpenDoc(doc) {
   if (doc.framerate) {
     meta.push(`<span class="doc-meta-item"><span class="meta-icon">⏱</span> ${doc.framerate} fps</span>`);
   }
+  if (doc.samplerate > 0) {
+    const kHz = (doc.samplerate % 1000 === 0)
+      ? (doc.samplerate / 1000) + ' kHz'
+      : (doc.samplerate / 1000).toFixed(1) + ' kHz';
+    meta.push(`<span class="doc-meta-item"><span class="meta-icon">🔊</span> ${esc(kHz)}</span>`);
+  }
   if (doc.sourceCount > 0) {
     meta.push(`<span class="doc-meta-item"><span class="meta-icon">📥</span> ${doc.sourceCount} source${doc.sourceCount !== 1 ? 's' : ''}</span>`);
   }
   if (doc.layerCount > 0) {
     meta.push(`<span class="doc-meta-item"><span class="meta-icon">◻️</span> ${doc.layerCount} layer${doc.layerCount !== 1 ? 's' : ''}</span>`);
   }
+
+  // Build editorial metadata block (title / show / author / description)
+  const editorial = [];
+  if (doc.title) {
+    editorial.push(`<div class="doc-detail"><span class="doc-detail-label">Title</span><span class="doc-detail-value">${esc(doc.title)}</span></div>`);
+  }
+  if (doc.show) {
+    editorial.push(`<div class="doc-detail"><span class="doc-detail-label">Show</span><span class="doc-detail-value">${esc(doc.show)}</span></div>`);
+  }
+  if (doc.author) {
+    editorial.push(`<div class="doc-detail"><span class="doc-detail-label">Author</span><span class="doc-detail-value">${esc(doc.author)}</span></div>`);
+  }
+  if (doc.description) {
+    editorial.push(`<div class="doc-detail"><span class="doc-detail-label">Description</span><span class="doc-detail-value doc-detail-description">${esc(doc.description)}</span></div>`);
+  }
+  const editorialHtml = editorial.length
+    ? `<div class="doc-details">${editorial.join('')}</div>`
+    : '';
   // Build show control section
   const showControlHtml = renderShowControl(doc);
 
@@ -197,8 +224,10 @@ function renderOpenDoc(doc) {
       <span class="doc-icon">📄</span>
       <span class="doc-name" title="${esc(doc.name)}">${esc(doc.name)}</span>
       ${badge}
+      ${kioskBadge}
     </div>
     ${meta.length ? '<div class="doc-meta">' + meta.join('') + '</div>' : ''}
+    ${editorialHtml}
     ${showControlHtml}
     ${destHtml}
   </div>`;

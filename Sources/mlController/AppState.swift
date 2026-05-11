@@ -162,22 +162,48 @@ final class AppState: ObservableObject {
         let selectedName = selectedMimoLiveURL.flatMap { url in
             availableMimoLiveApps.first(where: { $0.url.standardizedFileURL == url.standardizedFileURL })?.displayName
         }
+
+        // Build a name -> path lookup from local .tvshow files so we can
+        // resolve metadata (like kiosk mode) for documents the API only knows
+        // by name.
+        var localByName: [String: URL] = [:]
+        for url in localDocuments {
+            localByName[url.lastPathComponent] = url
+        }
+
         let snap = StatusSnapshot(
             running: isMimoLiveRunning,
             openDocuments: openDocuments.map { doc -> [String: Any] in
+                // If the API didn't give us a filepath, try to find one by name
+                // among the locally scanned .tvshow files.
+                let resolvedPath: String = {
+                    if !doc.filePath.isEmpty { return doc.filePath }
+                    return localByName[doc.name]?.path ?? ""
+                }()
+                // Resolve kiosk mode: prefer what the model already parsed
+                // (works when the API includes filepath), otherwise read it
+                // from the locally matched path.
+                let kioskMode: Bool? = doc.kioskMode ?? MimoDocument.readKioskMode(at: resolvedPath)
+
                 var d: [String: Any] = [
                     "id": doc.id,
                     "name": doc.displayName,
-                    "path": doc.filePath,
+                    "path": resolvedPath,
                     "liveState": doc.liveState,
                     "resolution": doc.resolution,
                     "framerate": doc.framerate,
+                    "samplerate": doc.samplerate,
                     "duration": doc.duration,
                     "formattedDuration": doc.formattedDuration,
                     "sourceCount": doc.sourceCount,
                     "layerCount": doc.layerCount,
                 ]
                 if let showStart = doc.showStart { d["showStart"] = showStart }
+                if let title = doc.title { d["title"] = title }
+                if let show = doc.show { d["show"] = show }
+                if let author = doc.author { d["author"] = author }
+                if let description = doc.description { d["description"] = description }
+                if let kiosk = kioskMode { d["kioskMode"] = kiosk }
                 d["outputs"] = doc.outputs.map { ["type": $0.type, "liveState": $0.liveState] }
                 d["outputDestinations"] = doc.outputDestinations.map { dest -> [String: Any] in
                     [

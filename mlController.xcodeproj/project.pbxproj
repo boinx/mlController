@@ -189,7 +189,6 @@
 				};
 			};
 			buildConfigurationList = 689A9C8AB180981FE87A8FAD /* Build configuration list for PBXProject "mlController" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -203,6 +202,7 @@
 				E04E8CBAA4B111D26A0C584C /* XCRemoteSwiftPackageReference "swifter" */,
 			);
 			preferredProjectObjectVersion = 77;
+			productRefGroup = 5F3B456E39337B5ABFB0EC48 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (

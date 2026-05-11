@@ -14,18 +14,28 @@ final class LocalDocumentScanner: @unchecked Sendable {
 
     private func _scanSync() -> [URL] {
         let fm = FileManager.default
-        guard let docsDir = fm.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            return []
-        }
-
-        // Check readability first — ~/Documents may be inaccessible without TCC permission,
-        // and FileManager.enumerator can block indefinitely in that case.
-        guard fm.isReadableFile(atPath: docsDir.path) else {
-            return []
-        }
+        let searchDirs: [URL?] = [
+            fm.urls(for: .documentDirectory, in: .userDomainMask).first,
+            fm.urls(for: .moviesDirectory, in: .userDomainMask).first,
+            fm.urls(for: .desktopDirectory, in: .userDomainMask).first,
+        ]
 
         var results: [URL] = []
-        scanDirectory(docsDir, into: &results, fm: fm)
+        var seen = Set<String>()
+        for case let dir? in searchDirs {
+            // Check readability first — these directories may be inaccessible without
+            // TCC permission, and FileManager.enumerator can block indefinitely in that case.
+            guard fm.isReadableFile(atPath: dir.path) else { continue }
+            var found: [URL] = []
+            scanDirectory(dir, into: &found, fm: fm)
+            for url in found {
+                let path = url.standardizedFileURL.path
+                if !seen.contains(path) {
+                    seen.insert(path)
+                    results.append(url)
+                }
+            }
+        }
 
         // Sort newest first
         return results.sorted { a, b in
