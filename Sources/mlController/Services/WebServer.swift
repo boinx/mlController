@@ -130,6 +130,7 @@ final class WebServer: @unchecked Sendable {
         server.POST["/api/zoom/join"] = handleZoomJoin
         server.GET["/api/zoom/sources"] = handleZoomSources
         server.GET["/api/zoom/participants"] = handleZoomParticipants
+        server.GET["/api/zoom/accounts"] = handleZoomAccounts
         server.POST["/api/zoom/assign"] = handleZoomAssign
         server.POST["/api/zoom/create-sources"] = handleZoomCreateSources
         server.POST["/api/zoom/request-recording"] = handleZoomRequestRecording
@@ -385,6 +386,44 @@ final class WebServer: @unchecked Sendable {
                 return jsonResponse(["error": "Failed to parse participants", "participants": [] as [Any]])
             }
             return jsonResponse(["participants": items])
+        }
+    }
+
+    /// Fetch the web-service accounts configured in mimoLive, filtered to Zoom
+    /// accounts. Since mimoLive 6.19, joining a Zoom meeting requires the account
+    /// `name`, so the dashboard needs the list to populate its account pickers.
+    private var handleZoomAccounts: ((HttpRequest) -> HttpResponse) {
+        return { [weak self] _ in
+            guard let self = self else { return .internalServerError }
+            guard let url = URL(string: "http://localhost:8989/api/v1/accounts") else {
+                return jsonResponse(["error": "Bad URL", "accounts": [] as [Any]])
+            }
+            let (data, error) = self.syncGET(url)
+            if let error = error { return jsonResponse(["error": error, "accounts": [] as [Any]]) }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let items = json["data"] as? [[String: Any]] else {
+                return jsonResponse(["error": "Failed to parse accounts", "accounts": [] as [Any]])
+            }
+            // The endpoint lists every account type (Zoom, YouTube, …) — keep only Zoom.
+            let zoomAccounts: [[String: Any]] = items.compactMap { item in
+                guard let attrs = item["attributes"] as? [String: Any],
+                      (attrs["account-type"] as? String) == "Zoom",
+                      let name = attrs["name"] as? String, !name.isEmpty else { return nil }
+                var account: [String: Any] = ["name": name]
+                account["email"] = attrs["email"] ?? ""
+                if let id = item["id"] as? String { account["id"] = id }
+                // Expired accounts can't join a meeting. mimoLive 6.19b1 doesn't yet
+                // publish an expiry flag on /accounts, but it uses these keys internally
+                // — read whichever it emits so the dashboard can flag expired accounts.
+                let expired = (attrs["expired"] as? Bool)
+                    ?? (attrs["token-expired"] as? Bool)
+                    ?? (attrs["is-expired"] as? Bool)
+                    ?? false
+                account["expired"] = expired
+                return account
+            }
+            return jsonResponse(["accounts": zoomAccounts])
         }
     }
 

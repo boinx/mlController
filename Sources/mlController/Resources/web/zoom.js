@@ -25,12 +25,18 @@ const meetingActionFeedback  = document.getElementById('meeting-action-feedback'
 const zoomMeetingId      = document.getElementById('zoom-meeting-id');
 const zoomPasscode       = document.getElementById('zoom-passcode');
 const zoomDisplayName    = document.getElementById('zoom-display-name');
-const zoomAccountName    = document.getElementById('zoom-account-name');
+const zoomAccountName    = document.getElementById('zoom-account-name');   // <select> (Join Meeting)
+const demoAccountName    = document.getElementById('demo-account-name');   // <select> (Join Demo)
 const btnCreateSources   = document.getElementById('btn-create-sources');
+
+// Zoom web-service accounts (from /api/zoom/accounts), used to populate the pickers.
+let zoomAccounts = [];
 
 // ── Fetch Zoom Data ──────────────────────────────────────────────────────────
 
 async function fetchZoomData() {
+  // Load the account list lazily — it may be empty until mimoLive is running.
+  if (zoomAccounts.length === 0) fetchZoomAccounts();
   try {
     const [srcRes, partRes] = await Promise.all([
       fetch('/api/zoom/sources'),
@@ -50,6 +56,58 @@ async function fetchZoomData() {
     lastUpdated.textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch (e) {
     // Don't show error banner from zoom fetch — dashboard handles connection errors
+  }
+}
+
+// ── Zoom Accounts (for the Join pickers) ─────────────────────────────────────
+
+async function fetchZoomAccounts() {
+  try {
+    const res = await fetch('/api/zoom/accounts');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    zoomAccounts = data.accounts || [];
+    populateAccountSelects();
+  } catch (e) {
+    // Leave selects as-is; the join handlers surface a helpful message if empty.
+  }
+}
+
+// Fill both account <select>s with the Zoom accounts, preserving the previous
+// choice (persisted in localStorage) and defaulting to the sole account if only one.
+function populateAccountSelects() {
+  const targets = [
+    { el: demoAccountName, key: 'zoom_demoAccountName' },
+    { el: zoomAccountName, key: 'zoom_accountName' },
+  ];
+  for (const { el, key } of targets) {
+    if (!el) continue;
+
+    if (zoomAccounts.length === 0) {
+      el.innerHTML = '<option value="">No Zoom accounts in mimoLive</option>';
+      el.disabled = true;
+      continue;
+    }
+
+    const saved = localStorage.getItem(key) || '';
+    let html = '<option value="">Select account…</option>';
+    for (const a of zoomAccounts) {
+      const base = a.email ? `${a.name} — ${a.email}` : a.name;
+      // Expired accounts can't join — surface them clearly and make them unselectable.
+      const label = a.expired ? `⚠️ ${base} (expired — re-authorize in mimoLive)` : base;
+      const disabled = a.expired ? ' disabled' : '';
+      html += `<option value="${esc(a.name)}"${disabled}>${esc(label)}</option>`;
+    }
+    el.innerHTML = html;
+    el.disabled = false;
+
+    // Only restore/default to a usable (non-expired) account.
+    const usable = zoomAccounts.filter(a => !a.expired);
+    if (saved && usable.some(a => a.name === saved)) {
+      el.value = saved;
+    } else if (usable.length === 1) {
+      el.value = usable[0].name;   // sensible default when there's exactly one usable account
+    }
   }
 }
 
@@ -274,6 +332,11 @@ async function createSourcesForParticipants() {
 // ── Join Meeting ─────────────────────────────────────────────────────────────
 
 async function joinZoomDemo() {
+  const account = demoAccountName ? demoAccountName.value.trim() : '';
+  if (!account) {
+    joinDemoSub.textContent = 'Select a Zoom account first';
+    return;
+  }
   btnJoinDemo.disabled = true;
   joinDemoSub.textContent = 'Joining Zoom demo meeting…';
   try {
@@ -282,7 +345,8 @@ async function joinZoomDemo() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         meetingId: 'Demo-Meeting-ID',
-        passcode: 'Demo-Meeting-Passcode'
+        passcode: 'Demo-Meeting-Passcode',
+        zoomAccountName: account
       })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -303,13 +367,17 @@ async function joinZoomCustom() {
     joinCustomSub.textContent = 'Meeting ID is required';
     return;
   }
+  const accountName = zoomAccountName.value.trim();
+  if (!accountName) {
+    joinCustomSub.textContent = 'Select a Zoom account (required since mimoLive 6.19)';
+    return;
+  }
   btnJoinCustom.disabled = true;
   joinCustomSub.textContent = 'Joining Zoom meeting…';
   try {
-    const body = { meetingId, virtualCamera: true };
+    const body = { meetingId, virtualCamera: true, zoomAccountName: accountName };
     if (zoomPasscode.value.trim())    body.passcode = zoomPasscode.value.trim();
     if (zoomDisplayName.value.trim()) body.displayName = zoomDisplayName.value.trim();
-    if (zoomAccountName.value.trim()) body.zoomAccountName = zoomAccountName.value.trim();
     const res = await fetch('/api/zoom/join', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -434,7 +502,6 @@ const zoomFields = [
   { el: zoomMeetingId,   key: 'zoom_meetingId' },
   { el: zoomPasscode,    key: 'zoom_passcode' },
   { el: zoomDisplayName, key: 'zoom_displayName' },
-  { el: zoomAccountName, key: 'zoom_accountName' },
 ];
 
 // Restore saved values
@@ -447,3 +514,13 @@ zoomFields.forEach(({ el, key }) => {
 zoomFields.forEach(({ el, key }) => {
   el.addEventListener('input', () => localStorage.setItem(key, el.value));
 });
+
+// Account <select>s are populated asynchronously, so they persist on `change`
+// (and their selection is restored inside populateAccountSelects()).
+if (zoomAccountName) zoomAccountName.addEventListener('change',
+  () => localStorage.setItem('zoom_accountName', zoomAccountName.value));
+if (demoAccountName) demoAccountName.addEventListener('change',
+  () => localStorage.setItem('zoom_demoAccountName', demoAccountName.value));
+
+// Load the Zoom account list up front (fetchZoomData also recovers it later).
+fetchZoomAccounts();

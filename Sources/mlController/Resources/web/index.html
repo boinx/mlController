@@ -677,6 +677,27 @@
   .source-select:focus { border-color: var(--accent); }
   .source-select:disabled { opacity: 0.5; cursor: not-allowed; }
 
+  /* ── Zoom: Account Picker ───────────────── */
+  .account-select {
+    width: 100%;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 30px 8px 10px;
+    font-family: var(--font);
+    font-size: 0.85rem;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237b82a8'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  .account-select:focus { border-color: var(--accent); }
+  .account-select:disabled { opacity: 0.5; cursor: not-allowed; }
+
   /* ── Zoom: Meeting Info ─────────────────── */
   .meeting-info {
     font-size: 0.78rem;
@@ -991,13 +1012,16 @@
     <!-- Join sections (hidden when meeting is active) -->
     <div id="join-sections">
       <!-- Join Demo Meeting -->
-      <div class="status-card" style="margin-bottom:14px;">
-        <div class="zoom-icon">📹</div>
-        <div class="status-text">
-          <div class="label">Demo Meeting</div>
-          <div class="sublabel" id="join-demo-sub">Join the mimoLive Zoom demo meeting</div>
+      <div class="status-card" style="flex-direction:column; align-items:stretch; gap:12px; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:18px;">
+          <div class="zoom-icon">📹</div>
+          <div class="status-text">
+            <div class="label">Demo Meeting</div>
+            <div class="sublabel" id="join-demo-sub">Join the mimoLive Zoom demo meeting</div>
+          </div>
         </div>
-        <div class="controls">
+        <div class="zoom-form-footer" style="margin-top:0;">
+          <select class="account-select" id="demo-account-name" aria-label="Zoom account" style="flex:1;"></select>
           <button class="btn-zoom" id="btn-join-demo" onclick="joinZoomDemo()">Join Demo</button>
         </div>
       </div>
@@ -1025,8 +1049,8 @@
             <input type="text" id="zoom-display-name" placeholder="mimoLive">
           </div>
           <div class="zoom-field">
-            <label for="zoom-account-name">Zoom Account</label>
-            <input type="text" id="zoom-account-name" placeholder="Zoom account name">
+            <label for="zoom-account-name">Zoom Account *</label>
+            <select class="account-select" id="zoom-account-name"></select>
           </div>
           <div class="zoom-form-footer">
             <span class="sublabel" id="join-custom-sub"></span>
