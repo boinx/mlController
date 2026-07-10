@@ -3,12 +3,25 @@
     <channel>
         <title>mlController</title>
         <item>
+            <title>1.6</title>
+            <pubDate>Fri, 10 Jul 2026 23:30:15 +0200</pubDate>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>1.6</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>10.13</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/boinx/mlController/releases/download/v1.6/mlController-1.6.zip" length="2768518" type="application/octet-stream" sparkle:edSignature="SQn8IIhoznDJtqup+K5v/DE3QLdDYimQZ0ocvhzuwDTB/UoFe1lE5r1DBaCp3TGNS6+adFOKHmBOm6DoPHtbCA=="/>
+            <sparkle:deltas>
+                <enclosure url="https://github.com/boinx/mlController/releases/download/v1.6/mlController5-4.delta" sparkle:deltaFrom="4" length="424098" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="p+MNjx0lWkiwFSWAMHEkmk7lpUGtTffRvZrvJKppGodZLD6arrudF+OQ7juf4F5rt4qqZ1a0L9FnHsIUNfwJDg=="/>
+                <enclosure url="https://github.com/boinx/mlController/releases/download/v1.6/mlController5-3.delta" sparkle:deltaFrom="3" length="441734" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="IppErBLqer4VGgrCIStBXiNm6YW/9DG8mRO3b03r7GByqdHPu6u02ArYw2uvkkBPEkdax9n3ehsVEWue9E++CA=="/>
+                <enclosure url="https://github.com/boinx/mlController/releases/download/v1.6/mlController5-2.delta" sparkle:deltaFrom="2" length="453206" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="z1CEIaCPxCWr3SvOX+kbxqWvQ6VQboAC65buedeoYUsAyNLFrwjqVLxRW7SXeiKvgiWaz8SBTbjpRc5rh47zCA=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>1.5</title>
             <pubDate>Mon, 11 May 2026 16:27:30 +0200</pubDate>
             <sparkle:version>4</sparkle:version>
             <sparkle:shortVersionString>1.5</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>10.13</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/boinx/mlController/releases/download/v1.5/mlController-1.5.zip" length="2761767" type="application/octet-stream" sparkle:edSignature="4fuZXNNmVg+Ukx9T3Qn2xGRmxK/b8BCPS+K1NHNmwLhz8ZowsrmpqDwV9XhHuLIiWscfTMP+GU8hnvxL1aMuAA=="/>
+            <enclosure url="https://github.com/boinx/mlController/releases/download/v1.6/mlController-1.5.zip" length="2761767" type="application/octet-stream" sparkle:edSignature="4fuZXNNmVg+Ukx9T3Qn2xGRmxK/b8BCPS+K1NHNmwLhz8ZowsrmpqDwV9XhHuLIiWscfTMP+GU8hnvxL1aMuAA=="/>
             <sparkle:deltas>
                 <enclosure url="https://github.com/boinx/mlController/releases/download/v1.5/mlController4-3.delta" sparkle:deltaFrom="3" length="214186" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="BLwoboOtmRRybs2F3ygtu3YY1GO8QJgodNIt+wKyy4rqXQjAX2oMrD6PN4rB+31RvbzKmAudd/ljTrm06hE/Cw=="/>
                 <enclosure url="https://github.com/boinx/mlController/releases/download/v1.5/mlController4-2.delta" sparkle:deltaFrom="2" length="248746" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="OVm0lSjRbYzHSIcFw7NXR6DMWpPqXyY/V5A2RZ2NnW3GKj4YNtyPhZabJh9upD/FC/c3tsKiUX5e96rcg9AJBg=="/>
@@ -20,18 +33,10 @@
             <sparkle:version>3</sparkle:version>
             <sparkle:shortVersionString>1.4</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>10.13</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/boinx/mlController/releases/download/v1.5/mlController-1.4.zip" length="2748702" type="application/octet-stream" sparkle:edSignature="ykNV11fQztRcW1jhkRn9vzUcMTANGdGoWoR++OFVb851EIDfZGE3uLTXccVE1ZrqTmSlYqIEoJM+FgJco38ABA=="/>
+            <enclosure url="https://github.com/boinx/mlController/releases/download/v1.6/mlController-1.4.zip" length="2748702" type="application/octet-stream" sparkle:edSignature="ykNV11fQztRcW1jhkRn9vzUcMTANGdGoWoR++OFVb851EIDfZGE3uLTXccVE1ZrqTmSlYqIEoJM+FgJco38ABA=="/>
             <sparkle:deltas>
                 <enclosure url="https://github.com/boinx/mlController/releases/download/v1.4/mlController3-2.delta" sparkle:deltaFrom="2" length="167702" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="BFMCs5j8HEzRJk9MH1nirMt4rOvEuz8hDDFHKBECMsP01lg4XGKxn+LGUYyaaOSByfYLbxn0G6k0e5SDlaimDw=="/>
             </sparkle:deltas>
-        </item>
-        <item>
-            <title>1.3</title>
-            <pubDate>Thu, 12 Mar 2026 20:41:37 +1000</pubDate>
-            <sparkle:version>2</sparkle:version>
-            <sparkle:shortVersionString>1.3</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>10.13</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/boinx/mlController/releases/download/v1.5/mlController-1.3.zip" length="2734507" type="application/octet-stream" sparkle:edSignature="StpVQLJQdU/guaECa+tR/Yqrguw7ld7BMS29AtJYWSEDx0O8HowuLMuFVUMdAWAnG66qEzhD/eik3cB/lkMFBA=="/>
         </item>
     </channel>
 </rss>
