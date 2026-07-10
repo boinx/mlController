@@ -55,11 +55,11 @@ For distributing to other users, use the release pipeline which signs with a Dev
 # One-time setup: store notarization credentials in the keychain
 make setup-notarization
 
-# Build, sign, notarize, and create a DMG
+# Build, sign, notarize, and create a ZIP
 make release
 ```
 
-This produces a `mlController-<version>.dmg` ready for distribution.
+This produces a `mlController-<version>.zip` ready for distribution.
 
 ### Building with Xcode
 
